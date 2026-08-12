@@ -63,7 +63,14 @@ class ProductRepository(BaseRepository):
 
     @classmethod
     def get_by_part_number(cls, part_number):
-        row = cls.query("SELECT id, packing_quantity FROM PRODUCTS WHERE part_number = ?", (part_number,), one=True)
+        sql = """
+            SELECT p.*, i.current_stock, c.price_per_100_pcs, c.price_per_unit 
+            FROM PRODUCTS p
+            LEFT JOIN INVENTORY i ON p.id = i.product_id
+            LEFT JOIN PRODUCT_COSTS c ON p.id = c.product_id AND c.is_current = 1
+            WHERE p.part_number = ?
+        """
+        row = cls.query(sql, (part_number,), one=True)
         return dict(row) if row else None
 
     @classmethod

@@ -98,6 +98,24 @@ class QuotationService:
             
             # Save quotation items
             for item in calc['items']:
+                # Ensure product_id exists on active cursor transaction
+                p_id = item['product_id']
+                cur.execute("SELECT id FROM PRODUCTS WHERE id = ?", (p_id,))
+                p_row = cur.fetchone()
+                if not p_row:
+                    cur.execute("SELECT id FROM PRODUCTS WHERE part_number = ?", (item['part_number'],))
+                    p_row = cur.fetchone()
+                    if not p_row:
+                        cur.execute(
+                            "INSERT INTO PRODUCTS (part_number, part_name, series, make) VALUES (?, ?, ?, ?)",
+                            (item['part_number'], item['part_name'], None, 'WAGO')
+                        )
+                        p_id = cur.lastrowid
+                    else:
+                        p_id = p_row['id']
+                else:
+                    p_id = p_row['id']
+
                 cur.execute(
                     """INSERT INTO QUOTATION_ITEMS (
                             quotation_id, product_id, part_number_snapshot, 
@@ -105,7 +123,7 @@ class QuotationService:
                             discount_percentage, gst_percentage, line_total
                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                     (
-                        quotation_id, item['product_id'], item['part_number'],
+                        quotation_id, p_id, item['part_number'],
                         item['part_name'], item['quantity'], item['unit_price_100'],
                         item['discount_percentage'], item['gst_percentage'], item['line_total']
                     )

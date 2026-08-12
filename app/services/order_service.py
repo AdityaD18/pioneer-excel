@@ -73,7 +73,7 @@ class OrderService:
             else:
                 price_per_unit = float(prod['price_per_100_pcs'] or 0) / 100.0
 
-            current_stock = float(prod['current_stock'] or 0)
+            current_stock = float(prod.get('current_stock', 0) or 0)
             
             discount_pct = item.get('discount_percentage')
             if discount_pct is None or discount_pct == '':
@@ -92,7 +92,7 @@ class OrderService:
             calculated_items.append({
                 "product_id": prod["id"],
                 "part_number": prod["part_number"],
-                "part_name": prod["part_name"] or prod["part_number"],
+                "part_name": prod.get("part_name") or prod["part_number"],
                 "quantity": qty,
                 "current_stock": current_stock,
                 "unit_price": price_per_unit,
@@ -184,13 +184,31 @@ class OrderService:
             cur.execute("UPDATE ORDERS SET order_number = ? WHERE id = ?", (order_number, order_id))
             
             for item in calc['items']:
+                # Ensure product_id exists on active cursor transaction
+                p_id = item['product_id']
+                cur.execute("SELECT id FROM PRODUCTS WHERE id = ?", (p_id,))
+                p_row = cur.fetchone()
+                if not p_row:
+                    cur.execute("SELECT id FROM PRODUCTS WHERE part_number = ?", (item['part_number'],))
+                    p_row = cur.fetchone()
+                    if not p_row:
+                        cur.execute(
+                            "INSERT INTO PRODUCTS (part_number, part_name, series, make) VALUES (?, ?, ?, ?)",
+                            (item['part_number'], item['part_name'], None, 'WAGO')
+                        )
+                        p_id = cur.lastrowid
+                    else:
+                        p_id = p_row['id']
+                else:
+                    p_id = p_row['id']
+
                 cur.execute(
                     """INSERT INTO ORDER_ITEMS (
                             order_id, product_id, part_number_snapshot, part_name_snapshot, 
                             quantity, unit_price, discount_percentage, gst_percentage, line_total
                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                     (
-                        order_id, item['product_id'], item['part_number'], item['part_name'],
+                        order_id, p_id, item['part_number'], item['part_name'],
                         item['quantity'], item['unit_price_100'], item['discount_percentage'],
                         item['gst_percentage'], item['line_total']
                     )
