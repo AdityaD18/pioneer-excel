@@ -222,28 +222,59 @@ def render_billing_builder(mode="invoice"):
         st.markdown("<br>", unsafe_allow_html=True)
 
     # 1. Customer Selection Header
+    def on_customer_change():
+        sel_val = st.session_state.get(f"{mode}_cust_select")
+        if sel_val and sel_val != "-- Select Customer --":
+            try:
+                c_id = int(sel_val.split("ID: ")[1].replace(")", ""))
+                c_obj = CustomerService.get_customer_by_id(c_id)
+                if c_obj:
+                    st.session_state[f"{mode}_cust_discount"] = float(c_obj.get('discount_percentage', 0.0) or 0.0)
+                    st.session_state[f"{mode}_gstin"] = str(c_obj.get('gst_number', '') or '')
+                    st.session_state[f"{mode}_terms"] = str(c_obj.get('payment_terms', 'Net 30 Days') or 'Net 30 Days')
+            except Exception:
+                pass
+
     col_b1, col_b2, col_b3 = st.columns(3)
     customers = CustomerService.get_customers()
     cust_opts = ["-- Select Customer --"] + [f"{c['name']} (ID: {c['id']})" for c in customers]
     
     with col_b1:
-        sel_cust_str = st.selectbox("👤 Select Customer", cust_opts, key=f"{mode}_cust_select")
+        sel_cust_str = st.selectbox(
+            "👤 Select Customer", 
+            cust_opts, 
+            key=f"{mode}_cust_select",
+            on_change=on_customer_change
+        )
         
     selected_cust = None
     if sel_cust_str != "-- Select Customer --":
-        c_id = int(sel_cust_str.split("ID: ")[1].replace(")", ""))
-        selected_cust = CustomerService.get_customer_by_id(c_id)
-        
+        try:
+            c_id = int(sel_cust_str.split("ID: ")[1].replace(")", ""))
+            selected_cust = CustomerService.get_customer_by_id(c_id)
+        except Exception:
+            pass
+
+    # Ensure session keys exist for immediate reactive autofill
+    if f"{mode}_cust_discount" not in st.session_state:
+        st.session_state[f"{mode}_cust_discount"] = float(selected_cust['discount_percentage']) if selected_cust else 0.0
+    if f"{mode}_gstin" not in st.session_state:
+        st.session_state[f"{mode}_gstin"] = selected_cust['gst_number'] if selected_cust and selected_cust['gst_number'] else ""
+    if f"{mode}_terms" not in st.session_state:
+        st.session_state[f"{mode}_terms"] = selected_cust['payment_terms'] if selected_cust and selected_cust['payment_terms'] else "Net 30 Days"
+
     with col_b2:
         disc_val = st.number_input(
             "🏷️ Customer Discount (%)", 
             min_value=0.0, max_value=100.0, 
-            value=float(selected_cust['discount_percentage']) if selected_cust else 0.0, 
             step=0.5,
             key=f"{mode}_cust_discount"
         )
     with col_b3:
-        gst_no = st.text_input("🏢 GSTIN Number", value=selected_cust['gst_number'] if selected_cust and selected_cust['gst_number'] else "", key=f"{mode}_gstin")
+        gst_no = st.text_input(
+            "🏢 GSTIN Number", 
+            key=f"{mode}_gstin"
+        )
 
     st.markdown("<br>", unsafe_allow_html=True)
     
@@ -404,7 +435,7 @@ def render_billing_builder(mode="invoice"):
         "name": selected_cust['name'] if selected_cust else "Guest Customer",
         "discount_percentage": disc_val,
         "gst_number": gst_no,
-        "payment_terms": "Net 30 Days"
+        "payment_terms": st.session_state.get(f"{mode}_terms", "Net 30 Days")
     }
     
     calc_res = OrderService.calculate_order(cust_payload, cart_items)

@@ -1,3 +1,4 @@
+import base64
 import pandas as pd
 import streamlit as st
 from app.services.invoice_service import InvoiceService
@@ -30,20 +31,29 @@ def render_history_tab():
                 })
             st.dataframe(pd.DataFrame(df_inv), use_container_width=True, hide_index=True)
             
-            # PDF Download selector
+            # PDF Download selector & Preview
             inv_nums = [i['invoice_number'] for i in invoices]
-            sel_inv_num = st.selectbox("Select Invoice to Download PDF", ["-- Select Invoice --"] + inv_nums, key="sel_inv_dl")
+            sel_inv_num = st.selectbox("Select Invoice to Preview & Download PDF", ["-- Select Invoice --"] + inv_nums, key="sel_inv_dl")
             if sel_inv_num != "-- Select Invoice --":
                 inv_obj = next(i for i in invoices if i['invoice_number'] == sel_inv_num)
                 inv_data = InvoiceService.get_invoice_by_id(inv_obj['id'])
                 pdf_bytes = generate_pdf_from_html(generate_invoice_html(inv_data))
-                st.download_button(
-                    label=f"📥 Download {sel_inv_num}.pdf",
-                    data=pdf_bytes,
-                    file_name=f"{sel_inv_num}.pdf",
-                    mime="application/pdf",
-                    use_container_width=True
-                )
+                
+                col_id1, col_id2 = st.columns([1, 2])
+                with col_id1:
+                    st.download_button(
+                        label=f"📥 Download {sel_inv_num}.pdf",
+                        data=pdf_bytes,
+                        file_name=f"{sel_inv_num}.pdf",
+                        mime="application/pdf",
+                        type="primary",
+                        use_container_width=True
+                    )
+                
+                b64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
+                pdf_display = f'<iframe src="data:application/pdf;base64,{b64_pdf}" width="100%" height="700" type="application/pdf" style="border:1px solid #444; border-radius:8px;"></iframe>'
+                st.markdown("##### 📄 PDF Document Preview")
+                st.markdown(pdf_display, unsafe_allow_html=True)
                 
     with tab_qtn:
         st.caption("View and re-download generated Commercial Quotations.")
@@ -63,17 +73,26 @@ def render_history_tab():
                 })
             st.dataframe(pd.DataFrame(df_qtn), use_container_width=True, hide_index=True)
             
-            # PDF Download selector
+            # PDF Download selector & Preview
             qtn_nums = [q['quotation_number'] for q in quotations]
-            sel_qtn_num = st.selectbox("Select Quotation to Download PDF", ["-- Select Quotation --"] + qtn_nums, key="sel_qtn_dl")
+            sel_qtn_num = st.selectbox("Select Quotation to Preview & Download PDF", ["-- Select Quotation --"] + qtn_nums, key="sel_qtn_dl")
             if sel_qtn_num != "-- Select Quotation --":
                 qtn_obj = next(q for q in quotations if q['quotation_number'] == sel_qtn_num)
                 qtn_data = QuotationService.get_quotation_by_id(qtn_obj['id'])
                 pdf_bytes = generate_pdf_from_html(generate_quotation_html(qtn_data))
-                st.download_button(
-                    label=f"📥 Download {sel_qtn_num}.pdf",
-                    data=pdf_bytes,
-                    file_name=f"{sel_qtn_num}.pdf",
-                    mime="application/pdf",
-                    use_container_width=True
-                )
+                
+                col_qd1, col_qd2 = st.columns([1, 2])
+                with col_qd1:
+                    st.download_button(
+                        label=f"📥 Download {sel_qtn_num}.pdf",
+                        data=pdf_bytes,
+                        file_name=f"{sel_qtn_num}.pdf",
+                        mime="application/pdf",
+                        type="primary",
+                        use_container_width=True
+                    )
+                
+                b64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
+                pdf_display = f'<iframe src="data:application/pdf;base64,{b64_pdf}" width="100%" height="700" type="application/pdf" style="border:1px solid #444; border-radius:8px;"></iframe>'
+                st.markdown("##### 📄 PDF Document Preview")
+                st.markdown(pdf_display, unsafe_allow_html=True)
