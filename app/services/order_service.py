@@ -183,24 +183,43 @@ class OrderService:
             order_number = f"ORD-{datetime.now().year}-{order_id:05d}"
             cur.execute("UPDATE ORDERS SET order_number = ? WHERE id = ?", (order_number, order_id))
             
-            for item in calc['items']:
-                # Ensure product_id exists on active cursor transaction
-                p_id = item['product_id']
-                cur.execute("SELECT id FROM PRODUCTS WHERE id = ?", (p_id,))
-                p_row = cur.fetchone()
-                if not p_row:
-                    cur.execute("SELECT id FROM PRODUCTS WHERE part_number = ?", (item['part_number'],))
+            for idx, item in enumerate(calc['items']):
+                p_id = item.get('product_id')
+                part_no = str(item.get('part_number', '') or '').strip()
+                if not part_no:
+                    part_no = f"PART-ITEM-{idx + 1}"
+                part_name = str(item.get('part_name') or part_no).strip()
+
+                p_row = None
+                if p_id:
+                    cur.execute("SELECT id FROM PRODUCTS WHERE id = ?", (p_id,))
                     p_row = cur.fetchone()
-                    if not p_row:
+                if not p_row and part_no:
+                    cur.execute("SELECT id FROM PRODUCTS WHERE part_number = ?", (part_no,))
+                    p_row = cur.fetchone()
+
+                if not p_row:
+                    try:
                         cur.execute(
                             "INSERT INTO PRODUCTS (part_number, part_name, series, make) VALUES (?, ?, ?, ?)",
-                            (item['part_number'], item['part_name'], None, 'WAGO')
+                            (part_no, part_name, None, 'WAGO')
                         )
                         p_id = cur.lastrowid
-                    else:
-                        p_id = p_row['id']
+                    except Exception:
+                        unique_pn = f"{part_no}-{datetime.now().strftime('%S%f')}"
+                        cur.execute(
+                            "INSERT INTO PRODUCTS (part_number, part_name, series, make) VALUES (?, ?, ?, ?)",
+                            (unique_pn, part_name, None, 'WAGO')
+                        )
+                        p_id = cur.lastrowid
                 else:
                     p_id = p_row['id']
+
+                qty = float(item.get('quantity', 0.0) or 0.0)
+                u_price = float(item.get('unit_price_100', 0.0) or 0.0)
+                disc_p = float(item.get('discount_percentage', 0.0) or 0.0)
+                gst_p = float(item.get('gst_percentage', 0.0) or 0.0)
+                l_total = float(item.get('line_total', 0.0) or 0.0)
 
                 cur.execute(
                     """INSERT INTO ORDER_ITEMS (
@@ -208,9 +227,8 @@ class OrderService:
                             quantity, unit_price, discount_percentage, gst_percentage, line_total
                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                     (
-                        order_id, p_id, item['part_number'], item['part_name'],
-                        item['quantity'], item['unit_price_100'], item['discount_percentage'],
-                        item['gst_percentage'], item['line_total']
+                        order_id, p_id, part_no, part_name,
+                        qty, u_price, disc_p, gst_p, l_total
                     )
                 )
                 
