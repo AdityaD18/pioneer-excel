@@ -12,10 +12,10 @@ from app.core.config import Config
 from app.ui.styles import render_html, draw_metric_card, trigger_toast
 from app.core.pdf_generator import generate_invoice_html, generate_quotation_html, generate_pdf_from_html
 
-def parse_pasted_products_text(raw_text, all_prods):
+def parse_pasted_products_text(raw_text, all_prods, default_discount=0.0):
     """
     Parses multi-line pasted product data from Excel/CSV/tables.
-    Supports tab, comma, or space separated lines: PartNumber [TAB] Quantity [TAB] Discount%
+    Supports 2-column or 3-column lines: PartNumber [TAB] Quantity [TAB Optional] Discount%
     """
     if not raw_text or not raw_text.strip():
         return [], 0
@@ -49,7 +49,7 @@ def parse_pasted_products_text(raw_text, all_prods):
                     
         if matched_prod:
             qty = 100.0
-            disc = 0.0
+            disc = default_discount
             if len(tokens) >= 2:
                 try:
                     qty = float(tokens[1].replace(',', '').replace('%', ''))
@@ -59,7 +59,7 @@ def parse_pasted_products_text(raw_text, all_prods):
                 try:
                     disc = float(tokens[2].replace(',', '').replace('%', ''))
                 except ValueError:
-                    disc = 0.0
+                    disc = default_discount
                     
             parsed_items.append({
                 "product_id": matched_prod['id'],
@@ -268,26 +268,25 @@ def render_billing_builder(mode="invoice"):
 
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # 2. Product Input Section (Left Side: Multi-Entry Table Grid | Right Side: Single-Entry Dropdown)
+    # 2. Product Input Section (Left Side: 2-Column Table Grid [Part Number, Quantity] | Right Side: Single-Entry Dropdown)
     render_html('<div class="setting-section"><div class="setting-section-title"><i class="fa-solid fa-cart-flatbed"></i> Product Input Panel</div></div>')
     
     c_left, c_right = st.columns([3, 2])
     
-    # --- LEFT SIDE: MULTI-ENTRY TABLE GRID & CLIPBOARD PASTE ---
+    # --- LEFT SIDE: 2-COLUMN MULTI-ENTRY TABLE GRID (PART NUMBER & QUANTITY ONLY) ---
     with c_left:
-        st.markdown("##### 📋 Multi-Entry Table & Clipboard Paste (Left)")
-        st.caption("Paste spreadsheet cells directly into the table below or paste tab-separated rows into the text area.")
+        st.markdown("##### 📋 Multi-Entry Table [Part Number & Quantity Only] (Left)")
+        st.caption("Enter/paste ONLY Part Number and Quantity. Rates, discounts, and totals are imported & calculated automatically!")
         
-        # Interactive Blank Table Grid for Paste
-        blank_rows = [{"Part Number": "", "Quantity (PCS)": 100.0, "Discount %": disc_val} for _ in range(5)]
-        grid_key = f"{mode}_paste_grid"
+        # 2-Column Empty Table Grid
+        blank_rows = [{"Part Number": "", "Quantity (PCS)": 100.0} for _ in range(5)]
+        grid_key = f"{mode}_paste_grid_2col"
         
         edited_paste_grid = st.data_editor(
             pd.DataFrame(blank_rows),
             column_config={
                 "Part Number": st.column_config.TextColumn(help="Type or paste Part Numbers directly into cells"),
-                "Quantity (PCS)": st.column_config.NumberColumn(min_value=1.0, step=10.0),
-                "Discount %": st.column_config.NumberColumn(min_value=0.0, max_value=100.0, step=0.5)
+                "Quantity (PCS)": st.column_config.NumberColumn(min_value=1.0, step=10.0)
             },
             num_rows="dynamic",
             use_container_width=True,
@@ -311,31 +310,30 @@ def render_billing_builder(mode="invoice"):
                             break
                 if matched:
                     q_val = float(row.get("Quantity (PCS)", 100.0) or 100.0)
-                    d_val = float(row.get("Discount %", disc_val) or 0.0)
                     st.session_state[session_key].append({
                         "product_id": matched['id'],
                         "part_number": matched['part_number'],
                         "quantity": q_val,
-                        "discount_percentage": d_val,
+                        "discount_percentage": disc_val,
                         "unit_price_100": matched['price_100']
                     })
                     grid_added += 1
                     
             if grid_added > 0:
-                trigger_toast(f"Added {grid_added} table grid items to order list!", icon="📋")
+                trigger_toast(f"Added {grid_added} items! Rates & discounts imported automatically.", icon="📋")
                 st.rerun()
             else:
                 st.warning("No matching part numbers found in filled table rows.")
 
         with st.expander("📝 Fast Multi-Line Text Area Paste"):
             paste_text = st.text_area(
-                "Paste Tabular Text (Format: PartNumber [TAB] Qty [TAB] Disc%)",
-                placeholder="206-118\t200\t5\n206-804\t500\t10",
+                "Paste Tabular Text (Format per line: PartNumber [TAB] Quantity)",
+                placeholder="206-118\t200\n206-804\t500",
                 key=f"{mode}_paste_area",
                 height=80
             )
             if st.button("📥 Import Pasted Text Rows", key=f"{mode}_btn_paste_text", use_container_width=True):
-                parsed_items, unrec = parse_pasted_products_text(paste_text, all_prods)
+                parsed_items, unrec = parse_pasted_products_text(paste_text, all_prods, default_discount=disc_val)
                 if parsed_items:
                     st.session_state[session_key].extend(parsed_items)
                     trigger_toast(f"Imported {len(parsed_items)} items from text paste!", icon="📋")
@@ -345,14 +343,13 @@ def render_billing_builder(mode="invoice"):
                 else:
                     st.error("No valid part numbers identified from pasted text.")
 
-    # --- RIGHT SIDE: SINGLE-ENTRY DROPDOWN ---
+    # --- RIGHT SIDE: SINGLE-ENTRY DROPDOWN (PART NUMBER & QUANTITY ONLY) ---
     with c_right:
         st.markdown("##### ➕ Single-Entry Dropdown (Right)")
         st.caption("Select a single product from catalog dropdown list.")
         
         p_sel = st.selectbox("Select Product", prod_names, key=f"{mode}_add_prod")
         p_qty = st.number_input("Qty (PCS)", min_value=1.0, value=100.0, step=10.0, key=f"{mode}_add_qty")
-        p_disc = st.number_input("Disc %", min_value=0.0, max_value=100.0, value=disc_val, step=0.5, key=f"{mode}_add_disc")
             
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("➕ Add Single Item", use_container_width=True, type="primary", key=f"{mode}_btn_add"):
@@ -362,7 +359,7 @@ def render_billing_builder(mode="invoice"):
                     "product_id": prod_obj['id'],
                     "part_number": prod_obj['part_number'],
                     "quantity": p_qty,
-                    "discount_percentage": p_disc,
+                    "discount_percentage": disc_val,
                     "unit_price_100": prod_obj['price_100']
                 })
                 trigger_toast(f"Added {prod_obj['part_number']} to order list!", icon="🛒")
@@ -371,7 +368,7 @@ def render_billing_builder(mode="invoice"):
     # 3. Order Line Items Data Editor Grid & Real-time Stock Audit
     cart_items = st.session_state[session_key]
     if not cart_items:
-        st.info("No line items added yet. Use the multi-entry table on the left or single-entry dropdown on the right to build an order.")
+        st.info("No line items added yet. Enter Part Number & Quantity on the left or select a product on the right to build an order.")
         return
 
     st.markdown("<br>", unsafe_allow_html=True)
