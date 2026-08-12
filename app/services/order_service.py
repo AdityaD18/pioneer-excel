@@ -40,12 +40,29 @@ class OrderService:
         
         for item in items_data:
             product_id = item.get('product_id')
+            part_number = item.get('part_number')
             qty = float(item.get('quantity', 0) or 0)
             
-            prod = ProductRepository.get_by_id(product_id)
-            
+            prod = None
+            if product_id:
+                prod = ProductRepository.get_by_id(product_id)
+            if not prod and part_number:
+                prod = ProductRepository.get_by_part_number(part_number)
+            if not prod and part_number:
+                from app.services.import_service import ImportService
+                norm_p = ImportService.normalize_part_number(part_number)
+                all_p = ProductRepository.get_all_billing_products()
+                for p in all_p:
+                    if ImportService.normalize_part_number(p['part_number']) == norm_p:
+                        prod = ProductRepository.get_by_id(p['id'])
+                        break
+            if not prod and part_number:
+                clean_pn = str(part_number).strip()
+                new_pid = ProductRepository.save_product(clean_pn, part_name=clean_pn)
+                prod = ProductRepository.get_by_id(new_pid)
+                
             if not prod:
-                raise ValueError(f"Product ID {product_id} not found in database.")
+                raise ValueError(f"Product ID {product_id} / Part Number '{part_number}' not found in database.")
             
             if item.get('unit_price') is not None:
                 price_per_unit = float(item['unit_price'])
