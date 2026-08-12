@@ -95,3 +95,16 @@ def render_settings_tab():
                 st.rerun()
             else:
                 st.error(f"Import failed: {', '.join(res['errors'])}")
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    render_html('<div class="setting-section"><div class="setting-section-title"><i class="fa-solid fa-arrows-rotate"></i> Reseed & Update Catalog</div></div>')
+    st.caption("Re-import all cost price rates and inventory stock levels cleanly from 'group order status.xlsx'.")
+    if st.button("🔄 Force Reseed & Update Catalog from Excel", key="btn_reseed_db", type="secondary", use_container_width=True):
+        with st.spinner("Clearing stale rows and re-importing fresh costs and stock..."):
+            from app.models.database import reseed_database_from_excel
+            ok = reseed_database_from_excel()
+            if ok:
+                trigger_toast("Successfully re-seeded database with clean cost prices & stock!", icon="🔄")
+                st.rerun()
+            else:
+                st.error("Failed to locate 'group order status.xlsx' or re-seed catalog.")
