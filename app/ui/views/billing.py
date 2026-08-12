@@ -12,6 +12,36 @@ from app.core.config import Config
 from app.ui.styles import render_html, draw_metric_card, trigger_toast
 from app.core.pdf_generator import generate_invoice_html, generate_quotation_html, generate_pdf_from_html
 
+from app.services.import_service import ImportService
+
+def find_matching_product(p_code_raw, all_prods):
+    """Robust matching for part numbers using exact, clean, normalized, and substring lookups."""
+    if not p_code_raw or not str(p_code_raw).strip():
+        return None
+    raw_str = str(p_code_raw).strip()
+    clean_str = raw_str.split('/')[0].strip().lower()
+    norm_str = ImportService.normalize_part_number(raw_str)
+    
+    # 1. Exact match on clean/raw part_number
+    for p in all_prods:
+        p_num = str(p['part_number']).strip().lower()
+        if p_num == clean_str or p_num == raw_str.lower():
+            return p
+            
+    # 2. Normalized part_number match
+    for p in all_prods:
+        p_norm = ImportService.normalize_part_number(p['part_number'])
+        if p_norm == norm_str:
+            return p
+            
+    # 3. Substring match fallback
+    for p in all_prods:
+        p_num = str(p['part_number']).strip().lower()
+        if clean_str in p_num or p_num in clean_str:
+            return p
+            
+    return None
+
 def parse_pasted_products_text(raw_text, all_prods, default_discount=0.0):
     """
     Parses multi-line pasted product data from Excel/CSV/tables.
@@ -19,11 +49,6 @@ def parse_pasted_products_text(raw_text, all_prods, default_discount=0.0):
     """
     if not raw_text or not raw_text.strip():
         return [], 0
-        
-    prod_lookup = {}
-    for p in all_prods:
-        part_clean = p['part_number'].strip().lower()
-        prod_lookup[part_clean] = p
         
     parsed_items = []
     unrecognized_count = 0
@@ -38,14 +63,8 @@ def parse_pasted_products_text(raw_text, all_prods, default_discount=0.0):
         if not tokens:
             continue
             
-        part_code = tokens[0].lower()
-        matched_prod = prod_lookup.get(part_code)
-        
-        if not matched_prod:
-            for k, p_obj in prod_lookup.items():
-                if part_code in k or k in part_code:
-                    matched_prod = p_obj
-                    break
+        part_code = tokens[0]
+        matched_prod = find_matching_product(part_code, all_prods)
                     
         if matched_prod:
             qty = 100.0
@@ -124,8 +143,8 @@ def show_invoice_confirmation_modal(cust_payload, cart_items, calc_res, stock_au
         inv_html = generate_invoice_html(inv_data)
         inv_pdf = generate_pdf_from_html(inv_html)
         
-        st.session_state.created_inv_pdf = inv_pdf
-        st.session_state.created_inv_number = inv_data['invoice_number']
+        st.session_state.created_invoice_pdf = inv_pdf
+        st.session_state.created_invoice_number = inv_data['invoice_number']
         trigger_toast(f"Created Invoice {inv_data['invoice_number']}!", icon="📜")
         st.rerun()
 
@@ -179,8 +198,8 @@ def show_quotation_confirmation_modal(cust_payload, cart_items, calc_res, stock_
         q_html = generate_quotation_html(q_data)
         q_pdf = generate_pdf_from_html(q_html)
         
-        st.session_state.created_qtn_pdf = q_pdf
-        st.session_state.created_qtn_number = q_data['quotation_number']
+        st.session_state.created_quotation_pdf = q_pdf
+        st.session_state.created_quotation_number = q_data['quotation_number']
         trigger_toast(f"Created Quotation {q_data['quotation_number']}!", icon="📄")
         st.rerun()
 
@@ -302,18 +321,12 @@ def render_billing_builder(mode="invoice"):
         with col_gbtn1:
             if st.button("📋 Add Grid Entries to Order", key=f"{mode}_btn_add_grid", use_container_width=True, type="secondary"):
                 grid_added = 0
-                prod_lookup = {p['part_number'].strip().lower(): p for p in all_prods}
                 
                 for idx, row in edited_paste_grid.iterrows():
-                    p_code = str(row.get("Part Number", "")).strip().lower()
+                    p_code = str(row.get("Part Number", "")).strip()
                     if not p_code:
                         continue
-                    matched = prod_lookup.get(p_code)
-                    if not matched:
-                        for k, p_obj in prod_lookup.items():
-                            if p_code in k or k in p_code:
-                                matched = p_obj
-                                break
+                    matched = find_matching_product(p_code, all_prods)
                     if matched:
                         q_val = float(row.get("Quantity (PCS)", 100.0) or 100.0)
                         st.session_state[session_key].append({
