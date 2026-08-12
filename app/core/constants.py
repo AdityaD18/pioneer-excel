@@ -22,7 +22,7 @@ SHORTFALL_SYNONYMS = ['short fall', 'shortfall', 'short_fall', 'shortage']
 MIN_REORDER_SYNONYMS = ['min. reorder qty', 'min reorder qty', 'min_reorder_qty', 'minimum reorder']
 ORDER_TO_PLACE_SYNONYMS = ['order to be placed', 'order_to_be_placed', 'order to place', 'suggested order']
 
-# Cost Price List Synonym Mapping Arrays
-PRICE_SYNONYMS = ['cat. price / 100 in rs.', 'cat. price / 100', 'price/100', 'price_100', 'price', 'rate', 'cost', 'list price', 'cat price']
+# Cost Price List Synonym Mapping Arrays (Prioritize decimal converted columns)
+PRICE_SYNONYMS = ['decimal converted', 'converted', 'cat. price / 100 in rs.', 'cat. price / 100', 'price/100', 'price_100', 'price', 'rate', 'cost', 'list price', 'cat price']
 PACKING_QTY_SYNONYMS = ['std. pkg. / unit qty', 'std pkg', 'packing', 'packing_qty', 'pkg qty', 'unit qty']
 SERIES_SYNONYMS = ['series', 'category', 'group', 'item series']

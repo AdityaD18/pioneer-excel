@@ -34,15 +34,17 @@ class ExcelHeaderDetector:
 
     @staticmethod
     def find_matching_column(df_cols, synonym_list):
-        """Helper to find column key by exact match first, then substring match."""
-        # Exact match (case insensitive)
-        for c in df_cols:
-            c_clean = str(c).lower().strip()
-            if c_clean in synonym_list:
-                return c
-        # Substring match
-        for c in df_cols:
-            c_clean = str(c).lower().strip()
-            if any(syn in c_clean for syn in synonym_list):
-                return c
+        """Helper to find column key by checking synonyms in priority order (exact match first, then substring)."""
+        # 1. Exact match in synonym priority order
+        for syn in synonym_list:
+            for c in df_cols:
+                c_clean = str(c).lower().strip()
+                if c_clean == syn:
+                    return c
+        # 2. Substring match in synonym priority order
+        for syn in synonym_list:
+            for c in df_cols:
+                c_clean = str(c).lower().strip()
+                if syn in c_clean:
+                    return c
         return None

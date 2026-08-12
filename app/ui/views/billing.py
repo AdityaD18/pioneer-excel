@@ -278,9 +278,13 @@ def render_billing_builder(mode="invoice"):
         st.markdown("##### 📋 Multi-Entry Table [Part Number & Quantity Only] (Left)")
         st.caption("Enter/paste ONLY Part Number and Quantity. Rates, discounts, and totals are imported & calculated automatically!")
         
-        # 2-Column Empty Table Grid
+        # 2-Column Empty Table Grid with Versioned Key for Instant Reset
+        ver_key = f"{mode}_grid_version"
+        if ver_key not in st.session_state:
+            st.session_state[ver_key] = 0
+            
+        grid_key = f"{mode}_paste_grid_2col_v{st.session_state[ver_key]}"
         blank_rows = [{"Part Number": "", "Quantity (PCS)": 100.0} for _ in range(5)]
-        grid_key = f"{mode}_paste_grid_2col"
         
         edited_paste_grid = st.data_editor(
             pd.DataFrame(blank_rows),
@@ -328,9 +332,7 @@ def render_billing_builder(mode="invoice"):
                     st.warning("No matching part numbers found in filled table rows.")
         with col_gbtn2:
             if st.button("🗑️ Clear Input Grid", key=f"{mode}_btn_clear_grid", use_container_width=True):
-                grid_key = f"{mode}_paste_grid_2col"
-                if grid_key in st.session_state:
-                    del st.session_state[grid_key]
+                st.session_state[ver_key] += 1
                 trigger_toast("Cleared input grid table!", icon="🗑️")
                 st.rerun()
 
