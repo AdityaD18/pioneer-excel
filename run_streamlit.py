@@ -19,7 +19,7 @@ from app.models.database import init_db
 from app.ui.styles import inject_custom_css, render_html
 from app.ui.views.catalog import render_catalog_tab
 from app.ui.views.stock_status import render_stock_status_tab
-from app.ui.views.billing import render_billing_tab
+from app.ui.views.billing import render_tax_invoice_tab, render_quotation_tab
 from app.ui.views.history import render_history_tab
 from app.ui.views.customers import render_customers_tab
 from app.ui.views.settings import render_settings_tab
@@ -43,10 +43,11 @@ render_html(f"""
 """)
 
 # Render Navigation Sidebar Tabs
-t_catalog, t_stock, t_billing, t_history, t_customers, t_settings = st.tabs([
+t_catalog, t_stock, t_invoice, t_quote, t_history, t_customers, t_settings = st.tabs([
     "📦 Product Catalog",
     "📑 Stock Group Status",
-    "📝 Invoice & Quote Builder",
+    "📝 Tax Invoice Builder",
+    "📄 Quotation Builder",
     "📜 History Ledger",
     "👥 Customer Directory",
     "⚙️ System Settings"
@@ -58,8 +59,11 @@ with t_catalog:
 with t_stock:
     render_stock_status_tab()
 
-with t_billing:
-    render_billing_tab()
+with t_invoice:
+    render_tax_invoice_tab()
+
+with t_quote:
+    render_quotation_tab()
 
 with t_history:
     render_history_tab()

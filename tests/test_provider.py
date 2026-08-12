@@ -51,7 +51,9 @@ class TestDataProviderCompliance(unittest.TestCase):
 
     def test_04_customer_retrieval(self):
         """Verify customer retrieval returns Customer domain objects."""
-        cust = CustomerService.create_customer("Provider Test Client", 5.0, "27PROV1234P1Z1", "Net 30 Days")
+        existing = CustomerService.get_customers("Provider Test Client")
+        if not existing:
+            cust = CustomerService.create_customer("Provider Test Client", 5.0, "27PROV1234P1Z1", "Net 30 Days")
         customers = self.provider.get_customers("Provider Test Client")
         self.assertIsInstance(customers, list)
         self.assertGreaterEqual(len(customers), 1)
@@ -77,7 +79,11 @@ class TestDataProviderCompliance(unittest.TestCase):
 
     def test_08_invoice_creation(self):
         """Verify saving invoice through provider."""
-        cust = CustomerService.create_customer("Provider Invoice Client", 10.0)
+        existing = CustomerService.get_customers("Provider Invoice Client")
+        if existing:
+            cust = existing[0]
+        else:
+            cust = CustomerService.create_customer("Provider Invoice Client", 10.0)
         items = self.provider.get_stock_items()
         if items:
             p_id = items[0].product_id

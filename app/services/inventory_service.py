@@ -39,3 +39,43 @@ class InventoryService:
     def get_reorder_status_sheet(cls, search_query=None, only_reorder=False):
         """Retrieves stock group reorder status sheet records."""
         return InventoryRepository.get_stock_sheet(search_kw=search_query, only_reorder=only_reorder)
+
+    @classmethod
+    def verify_stock_availability(cls, line_items, safety_buffer=0.0):
+        """
+        Audits requested billing line items against database inventory after applying a safety stock buffer.
+        Returns detailed stock status dictionary with item-level verification flags.
+        """
+        audit_results = []
+        has_insufficient = False
+        
+        for item in line_items:
+            part_number = item.get('part_number', '')
+            req_qty = float(item.get('quantity', 0.0))
+            
+            # Fetch inventory details
+            inv = InventoryRepository.get_stock_sheet(search_kw=part_number)
+            current_stock = 0.0
+            if inv:
+                current_stock = float(inv[0].get('Closing Stock', 0.0))
+                
+            effective_available = max(0.0, current_stock - safety_buffer)
+            is_insufficient = req_qty > effective_available
+            if is_insufficient:
+                has_insufficient = True
+                
+            audit_results.append({
+                "part_number": part_number,
+                "requested_qty": req_qty,
+                "current_stock": current_stock,
+                "safety_buffer": safety_buffer,
+                "effective_available": effective_available,
+                "shortfall": max(0.0, req_qty - effective_available),
+                "is_insufficient": is_insufficient
+            })
+            
+        return {
+            "has_insufficient_stock": has_insufficient,
+            "items": audit_results
+        }
+

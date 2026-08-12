@@ -206,21 +206,32 @@ class ImportService:
 
     @classmethod
     def sync_from_web_url(cls, url, imported_by='Auto Sync'):
-        """Downloads an Excel spreadsheet from a remote web URL and imports it in-memory."""
+        """Downloads an Excel/CSV spreadsheet from a remote web URL (Google Sheets, Drive link) and imports it in-memory."""
         import urllib.request
         from io import BytesIO
         
         url_clean = url.strip()
         import_logger.info(f"Initiating remote web spreadsheet sync from URL: {url_clean}")
-        if "docs.google.com/spreadsheets" in url_clean and "/edit" in url_clean:
-            url_clean = url_clean.split("/edit")[0] + "/export?format=xlsx"
+        
+        # Transform Google Sheets URL to export link
+        if "docs.google.com/spreadsheets" in url_clean:
+            # Handle /edit, /pubhtml, /htmlview, /view, etc.
+            base_url = url_clean.split("?")[0]
+            for mode in ["/edit", "/pubhtml", "/htmlview", "/view", "/pub"]:
+                if mode in base_url:
+                    base_url = base_url.split(mode)[0]
+                    break
+            if not base_url.endswith("/export"):
+                url_clean = base_url + "/export?format=xlsx"
+            else:
+                url_clean = base_url + "?format=xlsx"
             
         try:
             req = urllib.request.Request(
                 url_clean, 
                 headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
             )
-            with urllib.request.urlopen(req, timeout=15) as response:
+            with urllib.request.urlopen(req, timeout=20) as response:
                 content = response.read()
                 
             file_stream = BytesIO(content)

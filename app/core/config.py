@@ -28,6 +28,10 @@ class Config:
     # Active Data Provider (Supported: 'excel' | Future: 'tally', 'postgres', 'api')
     DATA_PROVIDER = _get_env('DATA_PROVIDER', 'excel').lower()
     
+    # Real-time Google Sheets Stock Sync & Safety Stock Configuration
+    GOOGLE_SHEETS_STOCK_URL = _get_env('GOOGLE_SHEETS_STOCK_URL', '')
+    SAFETY_STOCK_BUFFER = float(_get_env('SAFETY_STOCK_BUFFER', '0.0'))
+    
     # Company Profile & Branding Defaults
     COMPANY_NAME = _get_env('COMPANY_NAME', 'Pioneer Flow Billing ERP')
     COMPANY_SUBTITLE = _get_env('COMPANY_SUBTITLE', 'Mechanical Parts Inventory Management & Automated Billing Engine')
