@@ -294,36 +294,45 @@ def render_billing_builder(mode="invoice"):
             key=grid_key
         )
         
-        if st.button("📋 Add Table Grid Entries to Order", key=f"{mode}_btn_add_grid", use_container_width=True, type="secondary"):
-            grid_added = 0
-            prod_lookup = {p['part_number'].strip().lower(): p for p in all_prods}
-            
-            for idx, row in edited_paste_grid.iterrows():
-                p_code = str(row.get("Part Number", "")).strip().lower()
-                if not p_code:
-                    continue
-                matched = prod_lookup.get(p_code)
-                if not matched:
-                    for k, p_obj in prod_lookup.items():
-                        if p_code in k or k in p_code:
-                            matched = p_obj
-                            break
-                if matched:
-                    q_val = float(row.get("Quantity (PCS)", 100.0) or 100.0)
-                    st.session_state[session_key].append({
-                        "product_id": matched['id'],
-                        "part_number": matched['part_number'],
-                        "quantity": q_val,
-                        "discount_percentage": disc_val,
-                        "unit_price_100": matched['price_100']
-                    })
-                    grid_added += 1
-                    
-            if grid_added > 0:
-                trigger_toast(f"Added {grid_added} items! Rates & discounts imported automatically.", icon="📋")
+        col_gbtn1, col_gbtn2 = st.columns(2)
+        with col_gbtn1:
+            if st.button("📋 Add Grid Entries to Order", key=f"{mode}_btn_add_grid", use_container_width=True, type="secondary"):
+                grid_added = 0
+                prod_lookup = {p['part_number'].strip().lower(): p for p in all_prods}
+                
+                for idx, row in edited_paste_grid.iterrows():
+                    p_code = str(row.get("Part Number", "")).strip().lower()
+                    if not p_code:
+                        continue
+                    matched = prod_lookup.get(p_code)
+                    if not matched:
+                        for k, p_obj in prod_lookup.items():
+                            if p_code in k or k in p_code:
+                                matched = p_obj
+                                break
+                    if matched:
+                        q_val = float(row.get("Quantity (PCS)", 100.0) or 100.0)
+                        st.session_state[session_key].append({
+                            "product_id": matched['id'],
+                            "part_number": matched['part_number'],
+                            "quantity": q_val,
+                            "discount_percentage": disc_val,
+                            "unit_price_100": matched['price_100']
+                        })
+                        grid_added += 1
+                        
+                if grid_added > 0:
+                    trigger_toast(f"Added {grid_added} items! Rates & discounts imported automatically.", icon="📋")
+                    st.rerun()
+                else:
+                    st.warning("No matching part numbers found in filled table rows.")
+        with col_gbtn2:
+            if st.button("🗑️ Clear Input Grid", key=f"{mode}_btn_clear_grid", use_container_width=True):
+                grid_key = f"{mode}_paste_grid_2col"
+                if grid_key in st.session_state:
+                    del st.session_state[grid_key]
+                trigger_toast("Cleared input grid table!", icon="🗑️")
                 st.rerun()
-            else:
-                st.warning("No matching part numbers found in filled table rows.")
 
         with st.expander("📝 Fast Multi-Line Text Area Paste"):
             paste_text = st.text_area(
@@ -372,7 +381,14 @@ def render_billing_builder(mode="invoice"):
         return
 
     st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("#### 🛒 Current Order Line Items Table")
+    col_oh1, col_oh2 = st.columns([3, 1])
+    with col_oh1:
+        st.markdown("#### 🛒 Current Order Line Items Table")
+    with col_oh2:
+        if st.button("🗑️ Clear All Order Items", key=f"{mode}_btn_clear_order", use_container_width=True):
+            st.session_state[session_key] = []
+            trigger_toast("Cleared all order items!", icon="🗑️")
+            st.rerun()
     
     # Audit Stock Availability with Safety Buffer
     safety_buf = st.session_state.get("safety_stock_buffer", Config.SAFETY_STOCK_BUFFER)

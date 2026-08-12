@@ -23,6 +23,17 @@ class ImportService:
         """Delegates header detection to ExcelHeaderDetector for backward compatibility."""
         return ExcelHeaderDetector.detect_headers_and_df(file_path, sheet_name, mandatory_synonym_groups)
 
+    @staticmethod
+    def normalize_part_number(code):
+        """Normalizes part numbers by stripping packaging suffixes (/...) and segment leading zeros for reliable cross-sheet matching."""
+        if not code:
+            return ""
+        c = str(code).split('/')[0].strip()
+        if c.endswith('.0'):
+            c = c[:-2]
+        parts = [p.lstrip('0') or '0' for p in c.split('-')]
+        return '-'.join(parts).lower()
+
     @classmethod
     def import_inventory(cls, file_path, sheet_name=EXCEL_STOCK_SHEET_NAME, filename='uploaded_file.xlsx', imported_by=None):
         """Imports inventory quantities into the SQLite database with robust upserts and logging."""
@@ -102,13 +113,21 @@ class ImportService:
         cur = conn.cursor()
         cur.execute("BEGIN TRANSACTION;")
         
+        # Build normalized product lookup cache
+        cur.execute("SELECT id, part_number FROM PRODUCTS")
+        existing_prods = cur.fetchall()
+        norm_prod_cache = {cls.normalize_part_number(p['part_number']): p['id'] for p in existing_prods}
+        
         for idx, row in df.iterrows():
-            item_code = str(row.get(item_code_col, '')).strip()
-            if item_code.endswith('.0'):
-                item_code = item_code[:-2]
-            if not item_code or item_code.lower() == 'nan' or item_code.lower() == 'total':
+            raw_item_code = str(row.get(item_code_col, '')).strip()
+            if raw_item_code.endswith('.0'):
+                raw_item_code = raw_item_code[:-2]
+            if not raw_item_code or raw_item_code.lower() == 'nan' or raw_item_code.lower() == 'total':
                 continue
                 
+            clean_item_code = raw_item_code.split('/')[0].strip()
+            norm_code = cls.normalize_part_number(raw_item_code)
+            
             savepoint_name = f"sp_inv_{idx}"
             try:
                 cur.execute(f"SAVEPOINT {savepoint_name};")
@@ -131,19 +150,16 @@ class ImportService:
                 shortfall_val = metrics['shortfall']
                 order_to_place_val = metrics['order_to_place']
                 
-                # 1. Check if product exists
-                cur.execute("SELECT id FROM PRODUCTS WHERE part_number = ?", (item_code,))
-                prod = cur.fetchone()
-                
-                if prod is None:
-                    series = item_code.split('-')[0] if '-' in item_code else None
+                # 1. Match or Create product
+                product_id = norm_prod_cache.get(norm_code)
+                if product_id is None:
+                    series = clean_item_code.split('-')[0] if '-' in clean_item_code else None
                     cur.execute(
                         "INSERT INTO PRODUCTS (part_number, part_name, series, make) VALUES (?, ?, ?, ?)",
-                        (item_code, item_code, series, Config.DEFAULT_MAKE)
+                        (clean_item_code, clean_item_code, series, Config.DEFAULT_MAKE)
                     )
                     product_id = cur.lastrowid
-                else:
-                    product_id = prod['id']
+                    norm_prod_cache[norm_code] = product_id
                 
                 # 2. Upsert inventory record
                 cur.execute("SELECT id FROM INVENTORY WHERE product_id = ?", (product_id,))
@@ -322,10 +338,20 @@ class ImportService:
         cur = conn.cursor()
         cur.execute("BEGIN TRANSACTION;")
         
+        # Build normalized product lookup cache
+        cur.execute("SELECT id, part_number FROM PRODUCTS")
+        existing_prods = cur.fetchall()
+        norm_prod_cache = {cls.normalize_part_number(p['part_number']): p['id'] for p in existing_prods}
+        
         for idx, row in df.iterrows():
-            item_code = str(row.get(item_code_col, '')).strip()
-            if not item_code or item_code.lower() == 'nan' or item_code.lower() == 'total':
+            raw_item_code = str(row.get(item_code_col, '')).strip()
+            if raw_item_code.endswith('.0'):
+                raw_item_code = raw_item_code[:-2]
+            if not raw_item_code or raw_item_code.lower() == 'nan' or raw_item_code.lower() == 'total':
                 continue
+                
+            clean_item_code = raw_item_code.split('/')[0].strip()
+            norm_code = cls.normalize_part_number(raw_item_code)
                 
             savepoint_name = f"sp_cost_{idx}"
             try:
@@ -353,20 +379,19 @@ class ImportService:
                         except ValueError:
                             packing_qty = 1
 
-                series_val = str(row.get(series_col, '')).strip() if series_col else (item_code.split('-')[0] if '-' in item_code else None)
+                series_val = str(row.get(series_col, '')).strip() if series_col else (clean_item_code.split('-')[0] if '-' in clean_item_code else None)
                 if series_val == 'nan' or not series_val:
-                    series_val = item_code.split('-')[0] if '-' in item_code else None
+                    series_val = clean_item_code.split('-')[0] if '-' in clean_item_code else None
                 
-                cur.execute("SELECT id, packing_quantity FROM PRODUCTS WHERE part_number = ?", (item_code,))
-                prod = cur.fetchone()
-                if prod is None:
+                product_id = norm_prod_cache.get(norm_code)
+                if product_id is None:
                     cur.execute(
                         "INSERT INTO PRODUCTS (part_number, part_name, series, make, packing_quantity) VALUES (?, ?, ?, ?, ?)",
-                        (item_code, item_code, series_val, Config.DEFAULT_MAKE, packing_qty)
+                        (clean_item_code, clean_item_code, series_val, Config.DEFAULT_MAKE, packing_qty)
                     )
                     product_id = cur.lastrowid
+                    norm_prod_cache[norm_code] = product_id
                 else:
-                    product_id = prod['id']
                     cur.execute(
                         "UPDATE PRODUCTS SET packing_quantity = ?, series = ? WHERE id = ?",
                         (packing_qty, series_val, product_id)

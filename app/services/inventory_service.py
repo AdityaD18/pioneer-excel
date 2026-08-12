@@ -57,7 +57,9 @@ class InventoryService:
             inv = InventoryRepository.get_stock_sheet(search_kw=part_number)
             current_stock = 0.0
             if inv:
-                current_stock = float(inv[0].get('Closing Stock', 0.0))
+                closing = float(inv[0].get('Closing Stock', 0.0) or 0.0)
+                nett = float(inv[0].get('Nett Available', 0.0) or 0.0)
+                current_stock = max(closing, nett)
                 
             effective_available = max(0.0, current_stock - safety_buffer)
             is_insufficient = req_qty > effective_available
