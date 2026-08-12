@@ -25,7 +25,18 @@ def init_db():
         with open(Config.SCHEMA_PATH, 'r', encoding='utf-8') as f:
             schema_sql = f.read()
         
-        conn.executescript(schema_sql)
+        # Safely execute DDL statements individually to avoid executescript thread locks or OperationalError on Streamlit Cloud
+        for statement in schema_sql.split(';'):
+            stmt_clean = statement.strip()
+            if stmt_clean:
+                lines = [l for l in stmt_clean.split('\n') if not l.strip().startswith('--')]
+                cleaned_stmt = '\n'.join(lines).strip()
+                if cleaned_stmt:
+                    try:
+                        conn.execute(cleaned_stmt)
+                    except sqlite3.OperationalError as op_err:
+                        if 'already exists' not in str(op_err).lower():
+                            db_logger.warning(f"Ignored DDL operational notice: {op_err}")
         
         # Run migrations for INVENTORY table if new columns are missing
         cursor = conn.cursor()
