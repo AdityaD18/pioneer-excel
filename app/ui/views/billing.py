@@ -31,10 +31,9 @@ def parse_pasted_products_text(raw_text, all_prods):
     lines = raw_text.strip().split('\n')
     for line in lines:
         line_clean = line.strip()
-        if not line_clean or line_clean.lower().startswith('part') or line_clean.lower().startswith('item'):
+        if not line_clean or line_clean.lower().startswith('part') or line_clean.lower().startswith('item') or line_clean.lower().startswith('sr'):
             continue
             
-        # Split by tab, comma, or multiple spaces
         tokens = [t.strip() for t in re.split(r'[\t,;\s]+', line_clean) if t.strip()]
         if not tokens:
             continue
@@ -42,7 +41,6 @@ def parse_pasted_products_text(raw_text, all_prods):
         part_code = tokens[0].lower()
         matched_prod = prod_lookup.get(part_code)
         
-        # Try substring search if exact match not found
         if not matched_prod:
             for k, p_obj in prod_lookup.items():
                 if part_code in k or k in part_code:
@@ -75,9 +73,118 @@ def parse_pasted_products_text(raw_text, all_prods):
             
     return parsed_items, unrecognized_count
 
+@st.dialog("📜 Confirm Tax Invoice Generation")
+def show_invoice_confirmation_modal(cust_payload, cart_items, calc_res, stock_audit):
+    st.markdown(f"### Customer: **{cust_payload['name']}**")
+    if cust_payload.get('gst_number'):
+        st.caption(f"GSTIN: `{cust_payload['gst_number']}` | Terms: `{cust_payload['payment_terms']}`")
+        
+    st.markdown("#### 📋 Tabulated Line Item Product Status")
+    
+    audit_map = {item['part_number']: item for item in stock_audit['items']}
+    df_preview = []
+    
+    for idx, item in enumerate(calc_res['items']):
+        audit = audit_map.get(item['part_number'], {})
+        shortfall = audit.get('shortfall', 0.0)
+        is_bad = audit.get('is_insufficient', False)
+        
+        status = f"⚠️ Shortfall ({shortfall:,.0f} Pcs)" if is_bad else "✅ In Stock"
+        
+        df_preview.append({
+            "#": idx + 1,
+            "Part Number": item['part_number'],
+            "Requested Qty": f"{item['quantity']:,.0f} PCS",
+            "Closing Stock": f"{audit.get('current_stock', 0.0):,.0f} PCS",
+            "Stock Status": status,
+            "Rate / Pc": f"Rs. {item['unit_price']:,.2f}",
+            "Line Total": f"Rs. {item['line_total']:,.2f}"
+        })
+        
+    st.dataframe(pd.DataFrame(df_preview), use_container_width=True, hide_index=True)
+    
+    st.markdown("---")
+    col_m1, col_m2, col_m3 = st.columns(3)
+    with col_m1:
+        st.metric("Taxable Value", f"Rs. {calc_res['subtotal']:,.2f}")
+    with col_m2:
+        st.metric(f"GST ({calc_res['gst_rate']}%)", f"Rs. {calc_res['gst_amount']:,.2f}")
+    with col_m3:
+        st.metric("Grand Total", f"Rs. {calc_res['grand_total']:,.2f}")
+
+    if stock_audit['has_insufficient_stock']:
+        st.warning("⚠️ **Notice**: Stock shortfall detected for one or more items. Tax Invoice creation will proceed as requested.")
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    if st.button("✅ Confirm & Create Tax Invoice PDF", type="primary", use_container_width=True):
+        o_id = OrderService.create_order(cust_payload, cart_items)
+        inv_id = InvoiceService.generate_invoice_for_order(o_id)
+        inv_data = InvoiceService.get_invoice_by_id(inv_id)
+        inv_html = generate_invoice_html(inv_data)
+        inv_pdf = generate_pdf_from_html(inv_html)
+        
+        st.session_state.created_inv_pdf = inv_pdf
+        st.session_state.created_inv_number = inv_data['invoice_number']
+        trigger_toast(f"Created Invoice {inv_data['invoice_number']}!", icon="📜")
+        st.rerun()
+
+@st.dialog("📄 Confirm Commercial Quotation Generation")
+def show_quotation_confirmation_modal(cust_payload, cart_items, calc_res, stock_audit):
+    st.markdown(f"### Customer: **{cust_payload['name']}**")
+    if cust_payload.get('gst_number'):
+        st.caption(f"GSTIN: `{cust_payload['gst_number']}` | Terms: `{cust_payload['payment_terms']}`")
+        
+    st.markdown("#### 📋 Tabulated Line Item Product Status")
+    
+    audit_map = {item['part_number']: item for item in stock_audit['items']}
+    df_preview = []
+    
+    for idx, item in enumerate(calc_res['items']):
+        audit = audit_map.get(item['part_number'], {})
+        shortfall = audit.get('shortfall', 0.0)
+        is_bad = audit.get('is_insufficient', False)
+        
+        status = f"⚠️ Shortfall ({shortfall:,.0f} Pcs)" if is_bad else "✅ In Stock"
+        
+        df_preview.append({
+            "#": idx + 1,
+            "Part Number": item['part_number'],
+            "Requested Qty": f"{item['quantity']:,.0f} PCS",
+            "Closing Stock": f"{audit.get('current_stock', 0.0):,.0f} PCS",
+            "Stock Status": status,
+            "Rate / Pc": f"Rs. {item['unit_price']:,.2f}",
+            "Line Total": f"Rs. {item['line_total']:,.2f}"
+        })
+        
+    st.dataframe(pd.DataFrame(df_preview), use_container_width=True, hide_index=True)
+    
+    st.markdown("---")
+    col_m1, col_m2, col_m3 = st.columns(3)
+    with col_m1:
+        st.metric("Taxable Value", f"Rs. {calc_res['subtotal']:,.2f}")
+    with col_m2:
+        st.metric(f"GST ({calc_res['gst_rate']}%)", f"Rs. {calc_res['gst_amount']:,.2f}")
+    with col_m3:
+        st.metric("Grand Total", f"Rs. {calc_res['grand_total']:,.2f}")
+
+    if stock_audit['has_insufficient_stock']:
+        st.info("ℹ️ **Notice**: Quotation will reflect current stock availability.")
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    if st.button("✅ Confirm & Create Quotation PDF", type="primary", use_container_width=True):
+        q_id = QuotationService.generate_quotation(cust_payload, cart_items)
+        q_data = QuotationService.get_quotation_by_id(q_id)
+        q_html = generate_quotation_html(q_data)
+        q_pdf = generate_pdf_from_html(q_html)
+        
+        st.session_state.created_qtn_pdf = q_pdf
+        st.session_state.created_qtn_number = q_data['quotation_number']
+        trigger_toast(f"Created Quotation {q_data['quotation_number']}!", icon="📄")
+        st.rerun()
+
 def render_billing_builder(mode="invoice"):
     """
-    Shared Document Builder Component for Tax Invoices and Commercial Quotations.
+    Unified Document Builder Component for Tax Invoices and Commercial Quotations.
     mode: 'invoice' | 'quotation'
     """
     provider = get_data_provider()
@@ -89,10 +196,9 @@ def render_billing_builder(mode="invoice"):
     if session_key not in st.session_state:
         st.session_state[session_key] = []
         
-    # Title & Subtitle Header
     icon_cls = "fa-solid fa-file-invoice-dollar" if mode == "invoice" else "fa-solid fa-file-lines"
     title_text = "Tax Invoice Builder" if mode == "invoice" else "Commercial Quotation Builder"
-    sub_text = "Generate GST Tax Invoices with strict stock deduction & PDF export." if mode == "invoice" else "Create Commercial Price Quotations with validity terms & PDF download."
+    sub_text = "Create GST Tax Invoices with real-time stock verification & instant PDF generation." if mode == "invoice" else "Create Commercial Price Quotations with validity terms & PDF export."
     
     render_html(f'<div class="section-head"><i class="{icon_cls}"></i> {title_text}</div>')
     st.caption(sub_text)
@@ -116,6 +222,23 @@ def render_billing_builder(mode="invoice"):
                         st.rerun()
                     else:
                         st.error(f"Sync failed: {', '.join(res['errors'])}")
+
+    # Display Download Button if document was just created
+    pdf_key = f"created_{mode}_pdf"
+    num_key = f"created_{mode}_number"
+    if pdf_key in st.session_state and num_key in st.session_state:
+        doc_num = st.session_state[num_key]
+        st.success(f"🎉 **{'Invoice' if mode == 'invoice' else 'Quotation'} {doc_num} Generated Successfully!**")
+        st.download_button(
+            label=f"📥 Download PDF ({doc_num})",
+            data=st.session_state[pdf_key],
+            file_name=f"{doc_num}.pdf",
+            mime="application/pdf",
+            type="primary",
+            use_container_width=True,
+            key=f"dl_btn_{mode}_{doc_num}"
+        )
+        st.markdown("<br>", unsafe_allow_html=True)
 
     # 1. Customer Selection
     col_b1, col_b2, col_b3 = st.columns(3)
@@ -143,61 +266,61 @@ def render_billing_builder(mode="invoice"):
 
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # 2. Line Items Section (Dropdown Add + Multi-Product Clipboard Paste)
-    render_html('<div class="setting-section"><div class="setting-section-title"><i class="fa-solid fa-cart-flatbed"></i> Line Items Builder</div></div>')
+    # 2. Unified Product Input Section (Dropdown Select + Clipboard Paste side-by-side)
+    render_html('<div class="setting-section"><div class="setting-section-title"><i class="fa-solid fa-cart-flatbed"></i> Add Products to Order</div></div>')
     
-    tab_single, tab_multi = st.tabs(["➕ Single Item Dropdown", "📋 Multi-Product Clipboard Paste"])
+    c_in1, c_in2 = st.columns([3, 2])
     
-    with tab_single:
-        c_add1, c_add2, c_add3, c_add4 = st.columns([3, 1, 1, 1])
+    with c_in1:
+        st.markdown("**Option A: Select Product Part Number**")
+        c_add1, c_add2, c_add3 = st.columns([2, 1, 1])
         with c_add1:
-            p_sel = st.selectbox("Select Product Part Number", prod_names, key=f"{mode}_add_prod")
+            p_sel = st.selectbox("Select Product", prod_names, key=f"{mode}_add_prod")
         with c_add2:
-            p_qty = st.number_input("Quantity (PCS)", min_value=1.0, value=100.0, step=10.0, key=f"{mode}_add_qty")
+            p_qty = st.number_input("Qty (PCS)", min_value=1.0, value=100.0, step=10.0, key=f"{mode}_add_qty")
         with c_add3:
             p_disc = st.number_input("Disc %", min_value=0.0, max_value=100.0, value=disc_val, step=0.5, key=f"{mode}_add_disc")
-        with c_add4:
-            st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("➕ Add Item", use_container_width=True, type="primary", key=f"{mode}_btn_add"):
-                if p_sel != "-- Select Product --":
-                    prod_obj = prod_map[p_sel]
-                    st.session_state[session_key].append({
-                        "product_id": prod_obj['id'],
-                        "part_number": prod_obj['part_number'],
-                        "quantity": p_qty,
-                        "discount_percentage": p_disc,
-                        "unit_price_100": prod_obj['price_100']
-                    })
-                    trigger_toast(f"Added {prod_obj['part_number']} to list!", icon="🛒")
-                    st.rerun()
+            
+        if st.button("➕ Add Single Item", use_container_width=True, type="primary", key=f"{mode}_btn_add"):
+            if p_sel != "-- Select Product --":
+                prod_obj = prod_map[p_sel]
+                st.session_state[session_key].append({
+                    "product_id": prod_obj['id'],
+                    "part_number": prod_obj['part_number'],
+                    "quantity": p_qty,
+                    "discount_percentage": p_disc,
+                    "unit_price_100": prod_obj['price_100']
+                })
+                trigger_toast(f"Added {prod_obj['part_number']} to list!", icon="🛒")
+                st.rerun()
 
-    with tab_multi:
-        st.caption("Paste multiple rows from Excel/CSV (Format per line: `PartNumber [TAB] Quantity [TAB] Discount%`).")
+    with c_in2:
+        st.markdown("**Option B: Paste Multi-Product Table Rows**")
         paste_text = st.text_area(
-            "Paste Tabular Product Rows",
-            placeholder="0249-0116\t200\t5\n0981-0008\t500\t10",
+            "Paste Tabular Rows (Format: PartNumber [TAB] Qty [TAB] Disc%)",
+            placeholder="206-118\t200\t5\n206-804\t500\t10",
             key=f"{mode}_paste_area",
-            height=100
+            height=85
         )
-        if st.button("📥 Import Pasted Rows", key=f"{mode}_btn_paste", type="secondary"):
+        if st.button("📋 Import Pasted Rows", key=f"{mode}_btn_paste", use_container_width=True):
             parsed_items, unrec = parse_pasted_products_text(paste_text, all_prods)
             if parsed_items:
                 st.session_state[session_key].extend(parsed_items)
-                trigger_toast(f"Imported {len(parsed_items)} items from clipboard paste!", icon="📋")
+                trigger_toast(f"Imported {len(parsed_items)} items from clipboard!", icon="📋")
                 if unrec > 0:
-                    st.warning(f"Skipped {unrec} unrecognized part number rows.")
+                    st.warning(f"Skipped {unrec} unrecognized rows.")
                 st.rerun()
             else:
                 st.error("No valid part numbers identified from pasted text.")
 
-    # 3. Interactive Data Editor Grid & Real-time Stock Verification
+    # 3. Interactive Data Editor Grid & Real-time Stock Audit
     cart_items = st.session_state[session_key]
     if not cart_items:
-        st.info(f"No line items added yet. Use the single dropdown or clipboard paste tab above to build a {mode}.")
+        st.info("No line items added yet. Select a product or paste tabular rows above to build an order.")
         return
 
     st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("#### ✏️ Interactive Line Items Table")
+    st.markdown("#### ✏️ Line Items Table")
     
     # Audit Stock Availability with Safety Buffer
     safety_buf = st.session_state.get("safety_stock_buffer", Config.SAFETY_STOCK_BUFFER)
@@ -208,8 +331,9 @@ def render_billing_builder(mode="invoice"):
     grid_rows = []
     for idx, item in enumerate(cart_items):
         audit = audit_map.get(item['part_number'], {})
+        shortfall = audit.get('shortfall', 0.0)
         is_bad = audit.get('is_insufficient', False)
-        status_text = "❌ Shortfall" if is_bad else "✅ In Stock"
+        status_text = f"⚠️ Shortfall ({shortfall:,.0f} Pcs)" if is_bad else "✅ In Stock"
         
         grid_rows.append({
             "#": idx + 1,
@@ -218,7 +342,6 @@ def render_billing_builder(mode="invoice"):
             "Discount %": float(item['discount_percentage']),
             "Rate / 100 Pcs (INR)": float(item['unit_price_100']),
             "Available Stock": float(audit.get('current_stock', 0.0)),
-            "Effective (Stock-Buffer)": float(audit.get('effective_available', 0.0)),
             "Stock Status": status_text
         })
 
@@ -233,7 +356,6 @@ def render_billing_builder(mode="invoice"):
             "Discount %": st.column_config.NumberColumn(min_value=0.0, max_value=100.0, step=0.5),
             "Rate / 100 Pcs (INR)": st.column_config.NumberColumn(disabled=True),
             "Available Stock": st.column_config.NumberColumn(disabled=True),
-            "Effective (Stock-Buffer)": st.column_config.NumberColumn(disabled=True),
             "Stock Status": st.column_config.TextColumn(disabled=True)
         },
         use_container_width=True,
@@ -247,14 +369,10 @@ def render_billing_builder(mode="invoice"):
             cart_items[idx]['quantity'] = float(row['Quantity (PCS)'])
             cart_items[idx]['discount_percentage'] = float(row['Discount %'])
 
-    # Stock Warning Banner
+    # Stock Shortfall Warning Banner (non-blocking)
     if stock_audit['has_insufficient_stock']:
-        insuff_items = [i['part_number'] for i in stock_audit['items'] if i['is_insufficient']]
-        err_msg = f"⚠️ **Stock Shortfall Detected** for: `{', '.join(insuff_items)}` (after deducting {safety_buf} PCS safety buffer)."
-        if mode == "invoice":
-            st.error(f"{err_msg} Tax Invoices cannot be generated until stock is available.")
-        else:
-            st.warning(f"{err_msg} Quotations can still be created with stock warnings.")
+        insuff_items = [f"{i['part_number']} (Short: {i['shortfall']:,.0f} Pcs)" for i in stock_audit['items'] if i['is_insufficient']]
+        st.warning(f"⚠️ **Stock Shortfall Warning**: `{', '.join(insuff_items)}`. Invoice/Quotation creation is permitted as requested.")
 
     # 4. Calculation Summary
     cust_payload = {
@@ -282,39 +400,13 @@ def render_billing_builder(mode="invoice"):
 
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # 5. Document Action & PDF Generation
+    # 5. Open Confirmation Modal Dialog Button
     if mode == "invoice":
-        block_create = stock_audit['has_insufficient_stock']
-        if st.button("📜 Generate & Save Tax Invoice (INV)", use_container_width=True, type="primary", disabled=block_create):
-            o_id = OrderService.create_order(cust_payload, cart_items)
-            inv_id = InvoiceService.generate_invoice_for_order(o_id)
-            inv_data = InvoiceService.get_invoice_by_id(inv_id)
-            inv_html = generate_invoice_html(inv_data)
-            inv_pdf = generate_pdf_from_html(inv_html)
-            
-            st.success(f"Tax Invoice Created Successfully! Number: **{inv_data['invoice_number']}**")
-            st.download_button(
-                label=f"📥 Download Invoice PDF ({inv_data['invoice_number']})",
-                data=inv_pdf,
-                file_name=f"{inv_data['invoice_number']}.pdf",
-                mime="application/pdf",
-                use_container_width=True
-            )
+        if st.button("📜 Proceed to Review & Generate Tax Invoice (INV)", use_container_width=True, type="primary"):
+            show_invoice_confirmation_modal(cust_payload, cart_items, calc_res, stock_audit)
     else:
-        if st.button("📄 Generate & Save Commercial Quotation (QTN)", use_container_width=True, type="primary"):
-            q_id = QuotationService.generate_quotation(cust_payload, cart_items)
-            q_data = QuotationService.get_quotation_by_id(q_id)
-            q_html = generate_quotation_html(q_data)
-            q_pdf = generate_pdf_from_html(q_html)
-            
-            st.success(f"Quotation Created Successfully! Number: **{q_data['quotation_number']}**")
-            st.download_button(
-                label=f"📥 Download Quotation PDF ({q_data['quotation_number']})",
-                data=q_pdf,
-                file_name=f"{q_data['quotation_number']}.pdf",
-                mime="application/pdf",
-                use_container_width=True
-            )
+        if st.button("📄 Proceed to Review & Generate Commercial Quotation (QTN)", use_container_width=True, type="primary"):
+            show_quotation_confirmation_modal(cust_payload, cart_items, calc_res, stock_audit)
 
 def render_tax_invoice_tab():
     render_billing_builder(mode="invoice")

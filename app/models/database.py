@@ -57,9 +57,18 @@ def init_db():
                 ("Demo1", 10.0, "27DEMO11234A1Z1", Config.DEFAULT_PAYMENT_TERMS, now_str, now_str)
             )
             db_logger.info("Seeded initial default Demo1 customer profile.")
-        
-        conn.commit()
-        conn.close()
+            
+        # Seed Products & Inventory from group order status.xlsx if empty
+        cursor.execute("SELECT COUNT(*) FROM PRODUCTS")
+        if cursor.fetchone()[0] == 0:
+            conn.commit()
+            conn.close()
+            if os.path.exists(Config.STOCK_SOURCE_PATH):
+                from app.services.import_service import ImportService
+                db_logger.info(f"Seeding initial catalog & stock from {Config.STOCK_SOURCE_PATH}...")
+                ImportService.import_costs(Config.STOCK_SOURCE_PATH, sheet_name="PRICE LIST", imported_by="System Initializer")
+                ImportService.import_inventory(Config.STOCK_SOURCE_PATH, sheet_name="Stock Group Reorder Status", imported_by="System Initializer")
+            return
         db_logger.info("Database initialization completed successfully.")
     except Exception as ex:
         db_logger.error(f"Failed to initialize database: {ex}", exc_info=True)
