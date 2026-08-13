@@ -9,6 +9,9 @@ def generate_invoice_html(invoice_data):
     hide_pricing_details = bool(inv.get('hide_pricing_details'))
     
     header_html, rows_html = build_items_table_html(items, hide_pricing_details=hide_pricing_details)
+
+    transport_insurance_terms = order.get('customer_transport_insurance_snapshot')
+    transport_insurance_html = f"<br>Transport & Insurance: {transport_insurance_terms}" if transport_insurance_terms else ""
         
     html = f"""
     <!DOCTYPE html>
@@ -117,7 +120,7 @@ def generate_invoice_html(invoice_data):
                     <strong style="color: #0284C7;">BILLED TO:</strong><br>
                     <strong>{order['customer_name_snapshot']}</strong><br>
                     GSTIN: {order['customer_gst_snapshot'] or 'N/A'}<br>
-                    Terms: {order['customer_terms_snapshot'] or Config.DEFAULT_PAYMENT_TERMS}
+                    Terms: {order['customer_terms_snapshot'] or Config.DEFAULT_PAYMENT_TERMS}{transport_insurance_html}
                 </td>
                 <td width="50%">
                     <strong style="color: #0284C7;">ORDER DETAILS:</strong><br>

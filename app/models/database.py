@@ -75,6 +75,16 @@ def init_db():
         if "transport_insurance_terms" not in customer_columns:
             db_logger.info("Applying migration: ALTER TABLE CUSTOMERS ADD COLUMN transport_insurance_terms")
             cursor.execute("ALTER TABLE CUSTOMERS ADD COLUMN transport_insurance_terms TEXT NULL;")
+
+        # Migration: add customer_transport_insurance_snapshot to
+        # ORDERS/QUOTATIONS so it prints on invoice/quotation PDFs
+        # alongside the existing payment-terms snapshot.
+        for snap_table in ("ORDERS", "QUOTATIONS"):
+            cursor.execute(f"PRAGMA table_info({snap_table})")
+            snap_columns = [col[1] for col in cursor.fetchall()]
+            if "customer_transport_insurance_snapshot" not in snap_columns:
+                db_logger.info(f"Applying migration: ALTER TABLE {snap_table} ADD COLUMN customer_transport_insurance_snapshot")
+                cursor.execute(f"ALTER TABLE {snap_table} ADD COLUMN customer_transport_insurance_snapshot TEXT NULL;")
         
         # Migration: Add packing_quantity_text column to PRODUCTS (stores TBC or numeric as text)
         cursor.execute("PRAGMA table_info(PRODUCTS)")

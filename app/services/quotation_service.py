@@ -85,13 +85,14 @@ class QuotationService:
             cur.execute(
                 """INSERT INTO QUOTATIONS (
                         quotation_number, customer_id, customer_name_snapshot, 
-                        customer_gst_snapshot, customer_terms_snapshot, 
+                        customer_gst_snapshot, customer_terms_snapshot, customer_transport_insurance_snapshot,
                         discount_percentage, subtotal, discount_amount, 
                         gst_amount, grand_total, gst_rate, hide_pricing_details, created_at
-                   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     quotation_number, customer_id, customer_name,
                     gst_number or cust['gst_number'], payment_terms or cust['payment_terms'],
+                    cust.get('transport_insurance_terms'),
                     discount_percentage, calc['subtotal'], 0.0,
                     calc['gst_amount'], calc['grand_total'], calc['gst_rate'],
                     1 if hide_pricing_details else 0,

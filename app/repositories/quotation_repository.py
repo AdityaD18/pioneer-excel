@@ -42,6 +42,7 @@ class QuotationRepository(BaseRepository):
             "customer_name_snapshot": q['customer_name_snapshot'],
             "customer_gst_snapshot": q['customer_gst_snapshot'],
             "customer_terms_snapshot": q['customer_terms_snapshot'],
+            "customer_transport_insurance_snapshot": q['customer_transport_insurance_snapshot'],
             "discount_percentage": q['discount_percentage'],
             "subtotal": q['subtotal'],
             "gst_amount": q['gst_amount'],

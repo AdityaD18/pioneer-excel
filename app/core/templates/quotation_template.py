@@ -8,6 +8,9 @@ def generate_quotation_html(quotation_data):
     hide_pricing_details = bool(q.get('hide_pricing_details'))
     
     header_html, rows_html = build_items_table_html(items, hide_pricing_details=hide_pricing_details)
+
+    transport_insurance_terms = q.get('customer_transport_insurance_snapshot')
+    transport_insurance_html = f"<br>Transport & Insurance: {transport_insurance_terms}" if transport_insurance_terms else ""
         
     html = f"""
     <!DOCTYPE html>
@@ -116,7 +119,7 @@ def generate_quotation_html(quotation_data):
                     <strong style="color: #B45309;">PREPARED FOR:</strong><br>
                     <strong>{q['customer_name_snapshot']}</strong><br>
                     GSTIN: {q['customer_gst_snapshot'] or 'N/A'}<br>
-                    Terms: {q['customer_terms_snapshot'] or Config.DEFAULT_PAYMENT_TERMS}
+                    Terms: {q['customer_terms_snapshot'] or Config.DEFAULT_PAYMENT_TERMS}{transport_insurance_html}
                 </td>
                 <td width="50%">
                     <strong style="color: #B45309;">VALIDITY & TERMS:</strong><br>

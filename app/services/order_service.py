@@ -168,13 +168,14 @@ class OrderService:
             cur.execute(
                 """INSERT INTO ORDERS (
                         order_number, customer_id, customer_name_snapshot, 
-                        customer_gst_snapshot, customer_terms_snapshot, 
+                        customer_gst_snapshot, customer_terms_snapshot, customer_transport_insurance_snapshot,
                         discount_percentage, subtotal, discount_amount, 
                         gst_amount, grand_total, gst_rate
-                   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     temp_order_num, customer_id, customer_name,
                     gst_number or cust['gst_number'], payment_terms or cust['payment_terms'],
+                    cust.get('transport_insurance_terms'),
                     discount_percentage, calc['subtotal'], 0.0,
                     calc['gst_amount'], calc['grand_total'], calc['gst_rate']
                 )
