@@ -14,21 +14,18 @@ class ProductRepository(BaseRepository):
         sql = """
             SELECT 
                 p.id as product_id,
-                p.part_number as "Part Number",
                 p.series as "Series",
-                p.make as "Make",
-                p.packing_quantity as "Packing Qty",
-                COALESCE(i.current_stock, 0.0) as "Current Stock (PCS)",
-                COALESCE(c.price_per_100_pcs, 0.0) as "Cost / 100 Pcs (INR)",
-                COALESCE(c.price_per_unit, 0.0) as "Rate / Pc (INR)"
+                p.part_number as "Item Code",
+                p.packing_quantity as "Packing Quantity PCS",
+                COALESCE(c.price_per_100_pcs, 0.0) as "Price in Per 100pcs (INR)",
+                COALESCE(c.price_per_unit, 0.0) as "Cost Per Pc (INR)"
             FROM PRODUCTS p
-            LEFT JOIN INVENTORY i ON p.id = i.product_id
             LEFT JOIN PRODUCT_COSTS c ON p.id = c.product_id AND c.is_current = 1
             WHERE 1=1
         """
         params = []
         if search_kw:
-            sql += " AND (p.part_number LIKE ? OR p.make LIKE ?)"
+            sql += " AND (p.part_number LIKE ? OR p.series LIKE ?)"
             params.extend([f"%{search_kw}%", f"%{search_kw}%"])
         if series and series != "All Series":
             sql += " AND p.series = ?"

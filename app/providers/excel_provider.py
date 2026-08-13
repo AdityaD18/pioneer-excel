@@ -24,13 +24,13 @@ class ExcelDataProvider(BaseDataProvider):
         for r in raw_list:
             items.append(StockItem(
                 product_id=r['product_id'],
-                part_number=r['Part Number'],
-                series=r['Series'],
-                make=r['Make'],
-                packing_quantity=r['Packing Qty'],
-                current_stock=r['Current Stock (PCS)'],
-                cost_price_100=r['Cost / 100 Pcs (INR)'],
-                rate_per_unit=r['Rate / Pc (INR)']
+                part_number=r.get('Item Code') or r.get('Part Number', ''),
+                series=r.get('Series', ''),
+                make=r.get('Make', 'WAGO'),
+                packing_quantity=r.get('Packing Quantity PCS') or r.get('Packing Qty', 1),
+                current_stock=r.get('Current Stock (PCS)', 0.0),
+                cost_price_100=r.get('Price in Per 100pcs (INR)') or r.get('Cost / 100 Pcs (INR)', 0.0),
+                rate_per_unit=r.get('Cost Per Pc (INR)') or r.get('Rate / Pc (INR)', 0.0)
             ))
         return items
 

@@ -27,17 +27,15 @@ class InventoryRepository(BaseRepository):
     def get_stock_sheet(cls, search_kw=None, only_reorder=False):
         sql = """
             SELECT 
-                p.part_number as "Part Number",
-                p.make as "Make",
+                p.part_number as "Item Code",
                 COALESCE(i.current_stock, 0.0) as "Closing Stock",
                 COALESCE(i.purc_orders_pending, 0.0) as "Purc Orders Pending",
                 COALESCE(i.sale_orders_due, 0.0) as "Sale Orders Due",
                 COALESCE(i.nett_available, 0.0) as "Nett Available",
-                COALESCE(i.reorder_level, 0.0) as "Reorder Level",
-                COALESCE(i.short_fall, 0.0) as "Short Fall",
+                COALESCE(i.reorder_level, 0.0) as "Re-order Level",
+                COALESCE(i.short_fall, 0.0) as "Short fall",
                 COALESCE(i.min_reorder_qty, 0.0) as "Min Reorder Qty",
-                COALESCE(i.order_to_be_placed, 0.0) as "Order To Be Placed",
-                i.last_updated as "Last Updated"
+                COALESCE(i.order_to_be_placed, 0.0) as "Order to be Placed"
             FROM INVENTORY i
             JOIN PRODUCTS p ON i.product_id = p.id
             WHERE 1=1
