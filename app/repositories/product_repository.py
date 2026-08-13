@@ -30,7 +30,7 @@ class ProductRepository(BaseRepository):
             sql += " AND p.series = ?"
             params.append(series)
             
-        sql += " ORDER BY p.part_number ASC LIMIT 10000"
+        sql += " ORDER BY p.id ASC LIMIT 10000"
         rows = cls.query(sql, params)
         return [dict(r) for r in rows]
 

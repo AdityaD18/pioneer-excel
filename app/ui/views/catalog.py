@@ -33,8 +33,17 @@ def render_catalog_tab():
     st.caption("Double-click any price cell to update rates directly inline.")
     edited_df = st.data_editor(
         df_cat,
+        column_config={
+            "product_id": None,
+            "Series": st.column_config.TextColumn(disabled=True),
+            "Item Code": st.column_config.TextColumn(disabled=True),
+            "Packing Quantity PCS": st.column_config.TextColumn(),
+            price_col_name: st.column_config.NumberColumn(
+                label='Price in " Per 100pcs (₹)',
+                format="₹ %,.2f"
+            )
+        },
         key="cat_data_editor",
-        disabled=["product_id", "Series", "Item Code"],
         use_container_width=True,
         hide_index=True
     )

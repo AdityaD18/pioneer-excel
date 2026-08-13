@@ -47,6 +47,6 @@ class InventoryRepository(BaseRepository):
         if only_reorder:
             sql += " AND (i.short_fall > 0 OR i.order_to_be_placed > 0)"
             
-        sql += " ORDER BY p.part_number ASC LIMIT 10000"
+        sql += " ORDER BY i.id ASC LIMIT 10000"
         rows = cls.query(sql, params)
         return [dict(r) for r in rows]
