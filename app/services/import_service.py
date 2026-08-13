@@ -367,9 +367,6 @@ class ImportService:
                 except ValueError:
                     raise ValueError(f"Invalid price numeric value '{raw_price}'")
                 
-                if 'decimal' not in price_col.lower() and price_val > 100000 and int(price_val) == price_val:
-                    price_val = price_val / 100.0
-                
                 packing_qty = 1
                 if packing_col:
                     raw_packing = row.get(packing_col)

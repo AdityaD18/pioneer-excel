@@ -20,6 +20,7 @@ def _get_env(key, default):
 class Config:
     """Centralized Application Configuration Class."""
     
+    BASE_DIR = BASE_DIR
     # System Metadata
     APP_NAME = _get_env('APP_NAME', 'Pioneer Flow Billing')
     APP_VERSION = _get_env('APP_VERSION', '1.0.0')
