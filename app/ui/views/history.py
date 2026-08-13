@@ -1,9 +1,9 @@
-import base64
 import pandas as pd
 import streamlit as st
 from app.services.invoice_service import InvoiceService
 from app.services.quotation_service import QuotationService
 from app.ui.styles import render_html
+from app.ui.pdf_preview import render_pdf_preview
 from app.core.pdf_generator import generate_invoice_html, generate_quotation_html, generate_pdf_from_html
 
 def render_history_tab():
@@ -50,11 +50,9 @@ def render_history_tab():
                         width='stretch'
                     )
                 
-                b64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
-                pdf_display = f'<iframe src="data:application/pdf;base64,{b64_pdf}" width="100%" height="700" type="application/pdf" style="border:1px solid #444; border-radius:8px;"></iframe>'
                 st.markdown("##### 📄 PDF Document Preview")
-                st.markdown(pdf_display, unsafe_allow_html=True)
-                
+                render_pdf_preview(pdf_bytes, height=700)
+
     with tab_qtn:
         st.caption("View and re-download generated Commercial Quotations.")
         qtn_search = st.text_input("🔍 Search Quotation Number or Customer", key="qtn_hist_search")
@@ -92,7 +90,5 @@ def render_history_tab():
                         width='stretch'
                     )
                 
-                b64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
-                pdf_display = f'<iframe src="data:application/pdf;base64,{b64_pdf}" width="100%" height="700" type="application/pdf" style="border:1px solid #444; border-radius:8px;"></iframe>'
                 st.markdown("##### 📄 PDF Document Preview")
-                st.markdown(pdf_display, unsafe_allow_html=True)
+                render_pdf_preview(pdf_bytes, height=700)

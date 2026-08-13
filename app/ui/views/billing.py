@@ -1,5 +1,4 @@
 import re
-import base64
 import streamlit as st
 import pandas as pd
 from app.providers import get_data_provider
@@ -10,6 +9,7 @@ from app.services.quotation_service import QuotationService
 from app.services.product_service import ProductService
 from app.core.config import Config
 from app.ui.styles import render_html, draw_metric_card, trigger_toast
+from app.ui.pdf_preview import render_pdf_preview
 from app.core.pdf_generator import generate_invoice_html, generate_quotation_html, generate_pdf_from_html
 from app.services.import_service import ImportService
 
@@ -265,10 +265,8 @@ def render_billing_builder(mode="invoice"):
         )
         
         # Embedded PDF Preview
-        b64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
-        pdf_display = f'<iframe src="data:application/pdf;base64,{b64_pdf}" width="100%" height="750" type="application/pdf" style="border:1px solid #444; border-radius:8px;"></iframe>'
         st.markdown("##### 📄 PDF Document Preview")
-        st.markdown(pdf_display, unsafe_allow_html=True)
+        render_pdf_preview(pdf_bytes, height=750)
         st.markdown("<br>", unsafe_allow_html=True)
 
     # 1. Customer Selection Header
@@ -524,11 +522,12 @@ def render_billing_builder(mode="invoice"):
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    hide_pricing_details = st.checkbox(
-        "🙈 Hide List Price & Discount % on PDF (show only Discounted Price, Quantity & Delivery Terms)",
-        key=f"{mode}_hide_pricing_details",
-        help="When enabled, the generated PDF omits the Rate (per pc) and Discount % columns entirely. Only the final discounted price, quantity, line total, and delivery terms are shown to the customer."
-    )
+    with st.container(border=True):
+        hide_pricing_details = st.checkbox(
+            "🙈 Hide List Price & Discount % on PDF — show only Discounted Price, Quantity & Delivery Terms",
+            key=f"{mode}_hide_pricing_details",
+            help="When enabled, the generated PDF omits the Rate (per pc) and Discount % columns entirely. Only the final discounted price, quantity, line total, and delivery terms are shown to the customer."
+        )
 
     st.markdown("<br>", unsafe_allow_html=True)
     

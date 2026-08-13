@@ -352,6 +352,21 @@ def inject_custom_css():
         opacity: 1 !important;
     }
 
+    /* ---------- Checkboxes ---------- */
+    /* Enlarged for legibility - this app currently has few checkboxes
+       (pricing visibility toggle, stock filter), so a global bump reads
+       as a deliberate, consistent size rather than a one-off. */
+    div[data-testid="stCheckbox"] {
+        transform: scale(1.3);
+        transform-origin: left center;
+        margin: 4px 0;
+    }
+    div[data-testid="stCheckbox"] p {
+        font-size: 15px !important;
+        font-weight: 700 !important;
+        color: var(--pt-text-primary) !important;
+    }
+
     /* ---------- Expanders ---------- */
     /* stExpander is a fully custom React component (no native
        <details>/<summary>), so style the label text directly. */
