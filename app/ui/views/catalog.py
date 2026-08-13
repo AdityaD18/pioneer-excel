@@ -29,9 +29,10 @@ def render_catalog_tab():
     df_cat = pd.DataFrame(cat_items)
     df_cat["Packing Quantity PCS"] = df_cat["Packing Quantity PCS"].astype(str)
     price_col_name = 'Price in " Per 100pcs'
+    per_piece_col_name = 'Price per Piece'
     
     # Display Data Editor
-    st.caption("Double-click any price cell to update rates directly inline.")
+    st.caption("Double-click any price cell to update rates directly inline. \"Price per Piece\" is auto-calculated from \"Price in \\\" Per 100pcs\" and cannot be edited directly.")
     edited_df = st.data_editor(
         df_cat,
         column_config={
@@ -42,6 +43,11 @@ def render_catalog_tab():
             price_col_name: st.column_config.NumberColumn(
                 label='Price in " Per 100pcs (₹)',
                 format="₹ %,.2f"
+            ),
+            per_piece_col_name: st.column_config.NumberColumn(
+                label='Price per Piece (₹)',
+                format="₹ %,.4f",
+                disabled=True
             )
         },
         key="cat_data_editor",
