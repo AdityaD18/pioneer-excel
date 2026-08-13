@@ -69,15 +69,26 @@ def init_db():
             )
             db_logger.info("Seeded initial default Demo1 customer profile.")
             
-        # Check if PRODUCT_COSTS is empty or incomplete, and reseed catalog if needed
         cursor.execute("SELECT COUNT(*) FROM PRODUCT_COSTS")
         cost_count = cursor.fetchone()[0]
         cursor.execute("SELECT COUNT(*) FROM PRODUCTS")
         prod_count = cursor.fetchone()[0]
+        
+        # Check if database has stale/corrupted costs from pre-patch version
+        cursor.execute("SELECT c.price_per_100_pcs FROM PRODUCT_COSTS c JOIN PRODUCTS p ON c.product_id = p.id WHERE p.part_number = '2000-1201' AND c.is_current = 1")
+        sample_row = cursor.fetchone()
+        
+        needs_reseed = False
+        if prod_count == 0 or cost_count == 0:
+            needs_reseed = True
+        elif sample_row and sample_row[0] < 1000:
+            db_logger.info(f"Detected legacy divided cost data (sample 2000-1201 = {sample_row[0]}). Triggering automatic database re-seed...")
+            needs_reseed = True
+
         conn.commit()
         conn.close()
         
-        if prod_count == 0 or cost_count == 0:
+        if needs_reseed:
             reseed_database_from_excel()
             return
             
