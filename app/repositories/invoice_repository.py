@@ -35,7 +35,13 @@ class InvoiceRepository(BaseRepository):
         if not order_details:
             return None
             
-        items = cls.query("SELECT * FROM ORDER_ITEMS WHERE order_id = ?", (order_id,))
+        items = cls.query(
+            """SELECT oi.*, COALESCE(inv.current_stock, 0) as current_stock
+               FROM ORDER_ITEMS oi
+               LEFT JOIN INVENTORY inv ON oi.product_id = inv.product_id
+               WHERE oi.order_id = ?""",
+            (order_id,)
+        )
         
         result = dict(inv)
         result['order'] = dict(order_details)

@@ -34,9 +34,9 @@ class Config:
     SAFETY_STOCK_BUFFER = float(_get_env('SAFETY_STOCK_BUFFER', '0.0'))
     
     # Company Profile & Branding Defaults
-    COMPANY_NAME = _get_env('COMPANY_NAME', 'Pioneer Flow Billing ERP')
+    COMPANY_NAME = _get_env('COMPANY_NAME', 'Pioneer Technology')
     COMPANY_SUBTITLE = _get_env('COMPANY_SUBTITLE', 'Mechanical Parts Inventory Management & Automated Billing Engine')
-    COMPANY_FOOTER = _get_env('COMPANY_FOOTER', 'Pioneer Automation Corp - Official Commercial Invoice')
+    COMPANY_FOOTER = _get_env('COMPANY_FOOTER', 'Pioneer Technology - Official Commercial Invoice')
     
     # Business Operational Defaults
     DEFAULT_GST_RATE = float(_get_env('DEFAULT_GST_RATE', '18.0'))

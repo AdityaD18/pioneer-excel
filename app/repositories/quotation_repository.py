@@ -28,7 +28,13 @@ class QuotationRepository(BaseRepository):
         if not q:
             return None
             
-        items = cls.query("SELECT * FROM QUOTATION_ITEMS WHERE quotation_id = ?", (quotation_id,))
+        items = cls.query(
+            """SELECT qi.*, COALESCE(inv.current_stock, 0) as current_stock
+               FROM QUOTATION_ITEMS qi
+               LEFT JOIN INVENTORY inv ON qi.product_id = inv.product_id
+               WHERE qi.quotation_id = ?""",
+            (quotation_id,)
+        )
         
         result = dict(q)
         result['order'] = {

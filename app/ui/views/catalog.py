@@ -46,7 +46,7 @@ def render_catalog_tab():
             ),
             per_piece_col_name: st.column_config.NumberColumn(
                 label='Price per Piece (₹)',
-                format="₹ %,.4f",
+                format="₹ %,.2f",
                 disabled=True
             )
         },
