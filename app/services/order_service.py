@@ -4,6 +4,7 @@ from app.repositories.product_repository import ProductRepository
 from app.repositories.base_repository import BaseRepository
 from app.services.customer_service import CustomerService
 from app.core.config import Config
+from app.core.logger import billing_logger
 
 class OrderService:
     @staticmethod
@@ -190,30 +191,51 @@ class OrderService:
                     part_no = f"PART-ITEM-{idx + 1}"
                 part_name = str(item.get('part_name') or part_no).strip()
 
+                # Resolve the product fresh, inside this same transaction,
+                # rather than trusting a product_id captured earlier (e.g.
+                # in Streamlit session_state across reruns). Part number is
+                # the stable business key - a numeric id can go stale if
+                # the PRODUCTS table gets reseeded (new autoincrement ids)
+                # between when the cart item was added and when the order
+                # is actually submitted, which previously caused an
+                # IntegrityError on this INSERT. Look up by part_number
+                # first; only fall back to the id if no part number exists.
                 p_row = None
-                if p_id:
-                    cur.execute("SELECT id FROM PRODUCTS WHERE id = ?", (p_id,))
-                    p_row = cur.fetchone()
-                if not p_row and part_no:
+                if part_no:
                     cur.execute("SELECT id FROM PRODUCTS WHERE part_number = ?", (part_no,))
                     p_row = cur.fetchone()
+                if not p_row and p_id:
+                    cur.execute("SELECT id FROM PRODUCTS WHERE id = ?", (p_id,))
+                    p_row = cur.fetchone()
 
-                if not p_row:
-                    try:
-                        cur.execute(
-                            "INSERT INTO PRODUCTS (part_number, part_name, series, make) VALUES (?, ?, ?, ?)",
-                            (part_no, part_name, None, 'WAGO')
-                        )
-                        p_id = cur.lastrowid
-                    except Exception:
+                if p_row:
+                    p_id = p_row['id']
+                else:
+                    # INSERT OR IGNORE + re-SELECT is atomic and correct
+                    # regardless of any race on the part_number UNIQUE
+                    # constraint (unlike try/insert/except, which could
+                    # previously leave p_id unresolved if the exception
+                    # path's own retry insert also failed for any reason,
+                    # producing a NULL/stale product_id and the
+                    # IntegrityError seen on the ORDER_ITEMS insert below).
+                    cur.execute(
+                        "INSERT OR IGNORE INTO PRODUCTS (part_number, part_name, series, make) VALUES (?, ?, ?, ?)",
+                        (part_no, part_name, None, 'WAGO')
+                    )
+                    cur.execute("SELECT id FROM PRODUCTS WHERE part_number = ?", (part_no,))
+                    p_row = cur.fetchone()
+                    if p_row:
+                        p_id = p_row['id']
+                    else:
                         unique_pn = f"{part_no}-{datetime.now().strftime('%S%f')}"
                         cur.execute(
                             "INSERT INTO PRODUCTS (part_number, part_name, series, make) VALUES (?, ?, ?, ?)",
                             (unique_pn, part_name, None, 'WAGO')
                         )
                         p_id = cur.lastrowid
-                else:
-                    p_id = p_row['id']
+
+                if not p_id:
+                    raise ValueError(f"Could not resolve or create a product record for part number '{part_no}' (row {idx + 1}).")
 
                 qty = float(item.get('quantity', 0.0) or 0.0)
                 u_price = float(item.get('unit_price_100', 0.0) or 0.0)
@@ -236,6 +258,7 @@ class OrderService:
             return order_id
         except Exception as e:
             conn.rollback()
+            billing_logger.error(f"Failed to create order for customer '{customer_name}': {e}", exc_info=True)
             raise e
         finally:
             cur.close()

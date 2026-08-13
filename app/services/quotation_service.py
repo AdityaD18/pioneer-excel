@@ -108,30 +108,44 @@ class QuotationService:
                     part_no = f"PART-ITEM-{idx + 1}"
                 part_name = str(item.get('part_name') or part_no).strip()
 
+                # Resolve fresh by part_number first (see order_service.py
+                # create_order for why: a numeric product_id captured
+                # earlier, e.g. in Streamlit session_state, can go stale
+                # if PRODUCTS gets reseeded with new autoincrement ids in
+                # between - part_number is the stable business key.
                 p_row = None
-                if p_id:
-                    cur.execute("SELECT id FROM PRODUCTS WHERE id = ?", (p_id,))
-                    p_row = cur.fetchone()
-                if not p_row and part_no:
+                if part_no:
                     cur.execute("SELECT id FROM PRODUCTS WHERE part_number = ?", (part_no,))
                     p_row = cur.fetchone()
+                if not p_row and p_id:
+                    cur.execute("SELECT id FROM PRODUCTS WHERE id = ?", (p_id,))
+                    p_row = cur.fetchone()
 
-                if not p_row:
-                    try:
-                        cur.execute(
-                            "INSERT INTO PRODUCTS (part_number, part_name, series, make) VALUES (?, ?, ?, ?)",
-                            (part_no, part_name, None, 'WAGO')
-                        )
-                        p_id = cur.lastrowid
-                    except Exception:
+                if p_row:
+                    p_id = p_row['id']
+                else:
+                    # INSERT OR IGNORE + re-SELECT is atomic and correct
+                    # regardless of any race on the part_number UNIQUE
+                    # constraint (see order_service.py create_order for
+                    # the full explanation).
+                    cur.execute(
+                        "INSERT OR IGNORE INTO PRODUCTS (part_number, part_name, series, make) VALUES (?, ?, ?, ?)",
+                        (part_no, part_name, None, 'WAGO')
+                    )
+                    cur.execute("SELECT id FROM PRODUCTS WHERE part_number = ?", (part_no,))
+                    p_row = cur.fetchone()
+                    if p_row:
+                        p_id = p_row['id']
+                    else:
                         unique_pn = f"{part_no}-{datetime.now().strftime('%S%f')}"
                         cur.execute(
                             "INSERT INTO PRODUCTS (part_number, part_name, series, make) VALUES (?, ?, ?, ?)",
                             (unique_pn, part_name, None, 'WAGO')
                         )
                         p_id = cur.lastrowid
-                else:
-                    p_id = p_row['id']
+
+                if not p_id:
+                    raise ValueError(f"Could not resolve or create a product record for part number '{part_no}' (row {idx + 1}).")
 
                 qty = float(item.get('quantity', 0.0) or 0.0)
                 u_price = float(item.get('unit_price_100', 0.0) or 0.0)
