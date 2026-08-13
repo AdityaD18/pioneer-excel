@@ -37,6 +37,43 @@ class Config:
     COMPANY_NAME = _get_env('COMPANY_NAME', 'Pioneer Technology')
     COMPANY_SUBTITLE = _get_env('COMPANY_SUBTITLE', 'Mechanical Parts Inventory Management & Automated Billing Engine')
     COMPANY_FOOTER = _get_env('COMPANY_FOOTER', 'Pioneer Technology - Official Commercial Invoice')
+
+    # Seller Identity & Contact (shown on invoice/quotation PDFs) - update
+    # these in .env with your real registered details.
+    COMPANY_ADDRESS = _get_env('COMPANY_ADDRESS', '123 Industrial Estate Road, Andheri East, Mumbai, Maharashtra 400069, India')
+    COMPANY_GSTIN = _get_env('COMPANY_GSTIN', '27AAAAA0000A1Z5')
+    COMPANY_PAN = _get_env('COMPANY_PAN', 'AAAAA0000A')
+    COMPANY_PHONE = _get_env('COMPANY_PHONE', '+91 22 0000 0000')
+    COMPANY_EMAIL = _get_env('COMPANY_EMAIL', 'accounts@pioneertechnology.example')
+    COMPANY_WEBSITE = _get_env('COMPANY_WEBSITE', 'www.pioneertechnology.example')
+
+    # Bank Details for payment instructions - update with your real
+    # account details in .env.
+    BANK_NAME = _get_env('BANK_NAME', 'HDFC Bank')
+    BANK_ACCOUNT_NAME = _get_env('BANK_ACCOUNT_NAME', COMPANY_NAME)
+    BANK_ACCOUNT_NUMBER = _get_env('BANK_ACCOUNT_NUMBER', '000000000000')
+    BANK_IFSC = _get_env('BANK_IFSC', 'HDFC0000000')
+    BANK_BRANCH = _get_env('BANK_BRANCH', 'Andheri East, Mumbai')
+
+    # Standard Terms & Conditions printed on invoices/quotations. Override
+    # entirely via .env (use \\n for line breaks) if your legal/finance
+    # team has specific wording.
+    INVOICE_TERMS_AND_CONDITIONS = _get_env(
+        'INVOICE_TERMS_AND_CONDITIONS',
+        "Payment due within the stated payment terms from the invoice date.|"
+        "Interest @ 18% per annum will be charged on overdue payments.|"
+        "Goods once sold will not be taken back or exchanged.|"
+        "Subject to Mumbai jurisdiction only.|"
+        "This is a computer generated invoice and does not require a physical signature."
+    )
+    QUOTATION_TERMS_AND_CONDITIONS = _get_env(
+        'QUOTATION_TERMS_AND_CONDITIONS',
+        "Prices quoted are subject to change without prior notice.|"
+        "Validity of this quotation is limited to the period stated above.|"
+        "Delivery timelines are estimates and commence from date of confirmed order.|"
+        "Taxes as applicable at the time of invoicing will apply.|"
+        "This is a computer generated quotation and does not require a physical signature."
+    )
     
     # Business Operational Defaults
     DEFAULT_GST_RATE = float(_get_env('DEFAULT_GST_RATE', '18.0'))

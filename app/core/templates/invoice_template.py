@@ -1,5 +1,13 @@
 from app.core.config import Config
 from app.core.templates.items_table import build_items_table_html
+from app.core.templates.document_chrome import (
+    base_styles,
+    render_document_header,
+    render_party_and_transport_block,
+    render_bank_and_summary,
+    render_terms_and_signature,
+    render_footer,
+)
 
 def generate_invoice_html(invoice_data):
     """Generates print-ready HTML for Invoice documents."""
@@ -7,129 +15,59 @@ def generate_invoice_html(invoice_data):
     order = inv['order']
     items = inv['items']
     hide_pricing_details = bool(inv.get('hide_pricing_details'))
-    
+
     header_html, rows_html = build_items_table_html(items, hide_pricing_details=hide_pricing_details)
 
-    transport_insurance_terms = order.get('customer_transport_insurance_snapshot')
-    transport_insurance_html = f"<br>Transport & Insurance: {transport_insurance_terms}" if transport_insurance_terms else ""
-        
+    doc_header = render_document_header(
+        doc_label="TAX INVOICE",
+        doc_number_label="Invoice #",
+        doc_number=inv['invoice_number'],
+        doc_date_label="Invoice Date",
+        doc_date=inv['invoice_date'],
+    )
+
+    party_block = render_party_and_transport_block(
+        party_label="BILLED TO",
+        customer_name=order['customer_name_snapshot'],
+        customer_gst=order['customer_gst_snapshot'],
+        terms_label="Payment Terms",
+        terms_value=order['customer_terms_snapshot'] or Config.DEFAULT_PAYMENT_TERMS,
+        right_box_title="ORDER DETAILS",
+        ref_label="Order Ref",
+        ref_value=order['order_number'],
+        created_label="Order Date",
+        created_value=inv['created_at'][:10],
+        transport_insurance_terms=order.get('customer_transport_insurance_snapshot'),
+    )
+
+    bank_and_summary = render_bank_and_summary(
+        subtotal=order['subtotal'],
+        gst_rate=order['gst_rate'],
+        gst_amount=order['gst_amount'],
+        grand_total=order['grand_total'],
+    )
+
+    terms_and_signature = render_terms_and_signature(Config.INVOICE_TERMS_AND_CONDITIONS)
+
+    footer = render_footer(
+        f"{Config.COMPANY_NAME} &nbsp;|&nbsp; {Config.COMPANY_ADDRESS} &nbsp;|&nbsp; "
+        f"{Config.COMPANY_PHONE} &nbsp;|&nbsp; {Config.COMPANY_EMAIL}<br>"
+        "This is a computer generated invoice."
+    )
+
     html = f"""
     <!DOCTYPE html>
     <html>
     <head>
         <meta charset="utf-8">
         <style>
-            @page {{
-                size: A4;
-                margin: 1.5cm;
-            }}
-            body {{
-                font-family: Helvetica, Arial, sans-serif;
-                font-size: 11pt;
-                color: #1E293B;
-                line-height: 1.4;
-            }}
-            .header-table {{
-                width: 100%;
-                border-collapse: collapse;
-                margin-bottom: 20px;
-            }}
-            .company-name {{
-                font-size: 20pt;
-                font-weight: bold;
-                color: #0F172A;
-            }}
-            .doc-title {{
-                font-size: 22pt;
-                font-weight: bold;
-                color: #0284C7;
-                text-align: right;
-            }}
-            .meta-table {{
-                width: 100%;
-                border-collapse: collapse;
-                margin-bottom: 20px;
-                background-color: #F8FAFC;
-                border: 1px solid #E2E8F0;
-            }}
-            .meta-table td {{
-                padding: 10px;
-                vertical-align: top;
-            }}
-            .items-table {{
-                width: 100%;
-                border-collapse: collapse;
-                margin-bottom: 20px;
-            }}
-            .items-table th {{
-                background-color: #0F172A;
-                color: #FFFFFF;
-                font-weight: bold;
-                padding: 8px;
-                font-size: 10pt;
-            }}
-            .items-table td {{
-                padding: 8px;
-                border-bottom: 1px solid #E2E8F0;
-                font-size: 10pt;
-            }}
-            .summary-table {{
-                width: 40%;
-                float: right;
-                border-collapse: collapse;
-                margin-top: 10px;
-            }}
-            .summary-table td {{
-                padding: 6px;
-                text-align: right;
-            }}
-            .total-row {{
-                font-weight: bold;
-                font-size: 12pt;
-                background-color: #F0F9FF;
-                border-top: 2px solid #0284C7;
-            }}
-            .footer {{
-                margin-top: 50px;
-                font-size: 9pt;
-                color: #64748B;
-                text-align: center;
-                border-top: 1px solid #E2E8F0;
-                padding-top: 10px;
-            }}
+            {base_styles()}
         </style>
     </head>
     <body>
-        <table class="header-table">
-            <tr>
-                <td>
-                    <div class="company-name">{Config.COMPANY_NAME}</div>
-                    <div style="color: #64748B; font-size: 9pt;">{Config.COMPANY_SUBTITLE}</div>
-                </td>
-                <td style="text-align: right;">
-                    <div class="doc-title">TAX INVOICE</div>
-                    <div><strong>Invoice #:</strong> {inv['invoice_number']}</div>
-                    <div><strong>Date:</strong> {inv['invoice_date']}</div>
-                </td>
-            </tr>
-        </table>
-        
-        <table class="meta-table">
-            <tr>
-                <td width="50%">
-                    <strong style="color: #0284C7;">BILLED TO:</strong><br>
-                    <strong>{order['customer_name_snapshot']}</strong><br>
-                    GSTIN: {order['customer_gst_snapshot'] or 'N/A'}<br>
-                    Terms: {order['customer_terms_snapshot'] or Config.DEFAULT_PAYMENT_TERMS}{transport_insurance_html}
-                </td>
-                <td width="50%">
-                    <strong style="color: #0284C7;">ORDER DETAILS:</strong><br>
-                    Order Ref: {order['order_number']}<br>
-                    Created: {inv['created_at'][:10]}
-                </td>
-            </tr>
-        </table>
-        
+        {doc_header}
+        {party_block}
+
         <table class="items-table">
             <thead>
                 {header_html}
@@ -138,28 +76,10 @@ def generate_invoice_html(invoice_data):
                 {rows_html}
             </tbody>
         </table>
-        
-        <table class="summary-table">
-            <tr>
-                <td>Subtotal:</td>
-                <td><strong>Rs. {order['subtotal']:,.2f}</strong></td>
-            </tr>
-            <tr>
-                <td>GST ({order['gst_rate']}%):</td>
-                <td><strong>Rs. {order['gst_amount']:,.2f}</strong></td>
-            </tr>
-            <tr class="total-row">
-                <td>Grand Total:</td>
-                <td>Rs. {order['grand_total']:,.2f}</td>
-            </tr>
-        </table>
-        
-        <div style="clear: both;"></div>
-        
-        <div class="footer">
-            {Config.COMPANY_FOOTER}<br>
-            This is a computer generated invoice and does not require physical signature.
-        </div>
+
+        {bank_and_summary}
+        {terms_and_signature}
+        {footer}
     </body>
     </html>
     """
