@@ -4,7 +4,7 @@ from app.core.templates.document_chrome import (
     base_styles,
     render_document_header,
     render_party_and_transport_block,
-    render_summary,
+    render_bank_and_summary,
     render_terms_and_signature,
     render_footer,
 )
@@ -40,7 +40,7 @@ def generate_quotation_html(quotation_data):
         transport_insurance_terms=q.get('customer_transport_insurance_snapshot'),
     )
 
-    summary_block = render_summary(
+    summary_block = render_bank_and_summary(
         subtotal=q['subtotal'],
         gst_rate=q['gst_rate'],
         gst_amount=q['gst_amount'],

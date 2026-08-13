@@ -47,6 +47,13 @@ class Config:
     COMPANY_EMAIL = _get_env('COMPANY_EMAIL', 'accounts@pioneertechnology.example')
     COMPANY_WEBSITE = _get_env('COMPANY_WEBSITE', 'www.pioneertechnology.example')
 
+    # Company logo shown on invoice/quotation PDFs. Drop your logo file at
+    # this path (relative to the project root) and it will appear
+    # automatically in the document header - PDF generation looks for the
+    # file at render time and simply omits the logo if it isn't there yet,
+    # so nothing breaks before you add one.
+    COMPANY_LOGO_PATH = _get_env('COMPANY_LOGO_PATH', 'assets/logo.png')
+
     # Bank Details for payment instructions - update with your real
     # account details in .env.
     BANK_NAME = _get_env('BANK_NAME', 'HDFC Bank')

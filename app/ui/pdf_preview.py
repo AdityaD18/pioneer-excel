@@ -1,38 +1,29 @@
-import base64
+import tempfile
+import uuid
+from pathlib import Path
 import streamlit as st
 
 
 def render_pdf_preview(pdf_bytes, height=700):
     """
-    Renders an inline PDF preview without ever putting a data: URI directly
-    in an <iframe src="...">. Brave (and increasingly other browsers/ad
-    blockers) blocks that pattern outright - it resembles a common
-    malvertising delivery mechanism - which is why the old approach showed
-    'This page has been blocked by Brave' instead of the PDF.
+    Renders an inline PDF preview via Streamlit's own media file storage,
+    which is the actual root-cause fix for browsers/ad-blockers (Brave
+    etc.) blocking the preview.
 
-    Instead, the base64 PDF bytes are decoded into a Blob and turned into a
-    blob: URL entirely client-side, inside a properly sandboxed iframe (via
-    st.iframe, which executes embedded <script> tags - st.markdown's HTML
-    injection does not). Blob URLs are not treated as a network navigation
-    the way data: URIs are, so this is not blocked by content blockers.
+    Two earlier approaches were tried and both failed for the same
+    underlying reason - they each ultimately produced a data: or blob:
+    URI, which several browsers/content-blockers refuse to render because
+    that pattern is commonly abused for malvertising:
+      1. `<iframe src="data:application/pdf;base64,...">` directly.
+      2. A hand-built blob: URL constructed client-side via JavaScript.
+
+    Passing a pathlib.Path pointing at a real PDF file to st.iframe takes
+    a completely different code path: Streamlit uploads the file to its
+    own MediaFileManager and serves it from a genuine first-party URL
+    under the app's own origin, rendered by the browser's native PDF
+    viewer - not a data:/blob: URI at all, so there is nothing for a
+    content blocker to flag.
     """
-    b64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
-    html = f"""
-    <div style="width: 100%; height: {height}px;">
-        <iframe id="pdf-frame" width="100%" height="{height}"
-                style="border: 1px solid #3D4757; border-radius: 8px;"></iframe>
-    </div>
-    <script>
-        const base64 = "{b64_pdf}";
-        const byteChars = atob(base64);
-        const byteNumbers = new Array(byteChars.length);
-        for (let i = 0; i < byteChars.length; i++) {{
-            byteNumbers[i] = byteChars.charCodeAt(i);
-        }}
-        const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], {{ type: 'application/pdf' }});
-        const blobUrl = URL.createObjectURL(blob);
-        document.getElementById('pdf-frame').src = blobUrl;
-    </script>
-    """
-    st.iframe(html, height=height + 20)
+    tmp_path = Path(tempfile.gettempdir()) / f"pdf_preview_{uuid.uuid4().hex}.pdf"
+    tmp_path.write_bytes(pdf_bytes)
+    st.iframe(tmp_path, height=height)

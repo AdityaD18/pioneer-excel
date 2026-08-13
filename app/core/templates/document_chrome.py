@@ -1,3 +1,4 @@
+import os
 from app.core.config import Config
 from app.core.templates.number_to_words import amount_to_words
 
@@ -117,6 +118,24 @@ def base_styles():
 
         .bottom-section-table { margin-top: 8px; }
 
+        .bank-box {
+            border: 1px solid #D1D5DB;
+            padding: 6px 10px;
+            font-size: 8pt;
+            color: #374151;
+            vertical-align: top;
+        }
+        .bank-title {
+            font-size: 8pt;
+            font-weight: bold;
+            color: #0F1E33;
+            margin-bottom: 2px;
+            letter-spacing: 0.3px;
+        }
+        .bank-box table td { padding: 1px 0; font-size: 8pt; }
+        .bank-label { color: #6B7280; width: 40%; }
+        .bank-value { font-weight: bold; color: #1A1A1A; }
+
         .summary-box { vertical-align: top; }
         .summary-table td { padding: 2px 0; font-size: 9pt; }
         .summary-label { color: #4B5563; text-align: right; padding-right: 14px; }
@@ -183,7 +202,11 @@ def base_styles():
 def render_document_header(doc_label, doc_number_label, doc_number, doc_date_label, doc_date, extra_meta_rows=None):
     """Company identity block (left) + document type badge and reference
     numbers (right). extra_meta_rows: list of (label, value) tuples for
-    additional lines under the doc number/date (e.g. quotation validity)."""
+    additional lines under the doc number/date (e.g. quotation validity).
+
+    If a logo file exists at Config.COMPANY_LOGO_PATH it's shown above the
+    company name; otherwise this is silently omitted (no broken-image icon
+    or empty placeholder box) until a real logo file is added there."""
     meta_rows_html = ""
     if extra_meta_rows:
         for label, value in extra_meta_rows:
@@ -194,10 +217,16 @@ def render_document_header(doc_label, doc_number_label, doc_number, doc_date_lab
                 </tr>
             """
 
+    logo_html = ""
+    logo_full_path = os.path.join(Config.BASE_DIR, Config.COMPANY_LOGO_PATH)
+    if os.path.isfile(logo_full_path):
+        logo_html = f'<img src="{logo_full_path}" style="max-height: 46px; max-width: 220px; margin-bottom: 6px;"><br>'
+
     return f"""
     <table class="doc-header-table">
         <tr>
             <td width="58%" style="vertical-align: top;">
+                {logo_html}
                 <div class="company-name">{Config.COMPANY_NAME}</div>
                 <div class="company-subtitle">{Config.COMPANY_SUBTITLE}</div>
                 <div class="company-meta">
@@ -268,14 +297,27 @@ def render_party_and_transport_block(party_label, customer_name, customer_gst, t
     """
 
 
-def render_summary(subtotal, gst_rate, gst_amount, grand_total):
-    """Right-aligned subtotal/GST/total summary, followed by the Amount
-    in Words line."""
+def render_bank_and_summary(subtotal, gst_rate, gst_amount, grand_total):
+    """Bank/payment details (left) alongside the subtotal/GST/total summary
+    (right), followed by the Amount in Words line. Bank fields are pulled
+    from Config/.env - placeholders until updated with real account
+    details, but presented as a normal payment details box rather than
+    anything visibly marked 'demo'."""
     return f"""
     <table class="bottom-section-table">
         <tr>
-            <td width="55%"></td>
-            <td width="45%" class="summary-box">
+            <td width="55%" class="bank-box">
+                <div class="bank-title">PAYMENT / BANK DETAILS</div>
+                <table>
+                    <tr><td class="bank-label">Account Name</td><td class="bank-value">{Config.BANK_ACCOUNT_NAME}</td></tr>
+                    <tr><td class="bank-label">Bank</td><td class="bank-value">{Config.BANK_NAME}</td></tr>
+                    <tr><td class="bank-label">Account Number</td><td class="bank-value">{Config.BANK_ACCOUNT_NUMBER}</td></tr>
+                    <tr><td class="bank-label">IFSC Code</td><td class="bank-value">{Config.BANK_IFSC}</td></tr>
+                    <tr><td class="bank-label">Branch</td><td class="bank-value">{Config.BANK_BRANCH}</td></tr>
+                </table>
+            </td>
+            <td width="5%"></td>
+            <td width="40%" class="summary-box">
                 <table class="summary-table">
                     <tr>
                         <td class="summary-label">Subtotal</td>
