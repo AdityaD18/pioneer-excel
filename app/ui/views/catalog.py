@@ -27,6 +27,7 @@ def render_catalog_tab():
         return
         
     df_cat = pd.DataFrame(cat_items)
+    df_cat["Packing Quantity PCS"] = df_cat["Packing Quantity PCS"].astype(str)
     price_col_name = 'Price in " Per 100pcs'
     
     # Display Data Editor
