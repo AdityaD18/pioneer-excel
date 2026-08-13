@@ -92,19 +92,29 @@ def parse_pasted_products_text(raw_text, all_prods, default_discount=0.0):
     return parsed_items, unrecognized_count
 
 @st.dialog("📜 Review & Confirm Tax Invoice Generation", width="large")
-def show_invoice_confirmation_modal(cust_payload, cart_items, calc_res):
+def show_invoice_confirmation_modal(cust_payload, cart_items, calc_res, stock_audit):
     st.markdown(f"## Customer: **{cust_payload['name']}**")
     if cust_payload.get('gst_number'):
         st.caption(f"🏢 GSTIN: `{cust_payload['gst_number']}` | Payment Terms: `{cust_payload['payment_terms']}`")
         
-    st.markdown("### 📋 Order Line Items Review Table")
+    st.markdown("### 📋 Dynamic Stock Status & Order Review Table")
+    st.caption("Stock availability is cross-checked live against dynamic `STOCK STATUS.xlsx`.")
     
+    audit_map = {item['part_number']: item for item in stock_audit.get('items', [])}
     df_preview = []
+    
     for idx, item in enumerate(calc_res['items']):
+        audit = audit_map.get(item['part_number'], {})
+        shortfall = audit.get('shortfall', 0.0)
+        is_bad = audit.get('is_insufficient', False)
+        status_str = f"⚠️ Shortfall ({shortfall:,.0f} Pcs)" if is_bad else "✅ In Stock"
+        
         df_preview.append({
             "#": idx + 1,
             "Part Number": item['part_number'],
-            "Quantity": f"{item['quantity']:,.0f} PCS",
+            "Requested Qty": f"{item['quantity']:,.0f} PCS",
+            "Available Stock": f"{audit.get('current_stock', 0.0):,.0f} PCS",
+            "Stock Status": status_str,
             "Rate / Pc (INR)": f"Rs. {item['unit_price']:,.2f}",
             "Discount %": f"{item['discount_percentage']:.1f}%",
             "Line Total (INR)": f"Rs. {item['line_total']:,.2f}"
@@ -120,6 +130,9 @@ def show_invoice_confirmation_modal(cust_payload, cart_items, calc_res):
         st.metric(f"GST Amount ({calc_res['gst_rate']}%)", f"Rs. {calc_res['gst_amount']:,.2f}")
     with col_m3:
         st.metric("Grand Total Payable", f"Rs. {calc_res['grand_total']:,.2f}")
+
+    if stock_audit.get('has_insufficient_stock'):
+        st.warning("⚠️ **Notice**: One or more products have stock shortfalls. Tax Invoice creation will proceed as requested.")
 
     st.markdown("<br>", unsafe_allow_html=True)
     if st.button("🚀 Confirm & Generate Tax Invoice PDF", type="primary", use_container_width=True):
@@ -135,19 +148,29 @@ def show_invoice_confirmation_modal(cust_payload, cart_items, calc_res):
         st.rerun()
 
 @st.dialog("📄 Review & Confirm Commercial Quotation Generation", width="large")
-def show_quotation_confirmation_modal(cust_payload, cart_items, calc_res):
+def show_quotation_confirmation_modal(cust_payload, cart_items, calc_res, stock_audit):
     st.markdown(f"## Customer: **{cust_payload['name']}**")
     if cust_payload.get('gst_number'):
         st.caption(f"🏢 GSTIN: `{cust_payload['gst_number']}` | Payment Terms: `{cust_payload['payment_terms']}`")
         
-    st.markdown("### 📋 Order Line Items Review Table")
+    st.markdown("### 📋 Dynamic Stock Status & Order Review Table")
+    st.caption("Stock availability is cross-checked live against dynamic `STOCK STATUS.xlsx`.")
     
+    audit_map = {item['part_number']: item for item in stock_audit.get('items', [])}
     df_preview = []
+    
     for idx, item in enumerate(calc_res['items']):
+        audit = audit_map.get(item['part_number'], {})
+        shortfall = audit.get('shortfall', 0.0)
+        is_bad = audit.get('is_insufficient', False)
+        status_str = f"⚠️ Shortfall ({shortfall:,.0f} Pcs)" if is_bad else "✅ In Stock"
+        
         df_preview.append({
             "#": idx + 1,
             "Part Number": item['part_number'],
-            "Quantity": f"{item['quantity']:,.0f} PCS",
+            "Requested Qty": f"{item['quantity']:,.0f} PCS",
+            "Available Stock": f"{audit.get('current_stock', 0.0):,.0f} PCS",
+            "Stock Status": status_str,
             "Rate / Pc (INR)": f"Rs. {item['unit_price']:,.2f}",
             "Discount %": f"{item['discount_percentage']:.1f}%",
             "Line Total (INR)": f"Rs. {item['line_total']:,.2f}"
@@ -163,6 +186,9 @@ def show_quotation_confirmation_modal(cust_payload, cart_items, calc_res):
         st.metric(f"GST Amount ({calc_res['gst_rate']}%)", f"Rs. {calc_res['gst_amount']:,.2f}")
     with col_m3:
         st.metric("Grand Total Payable", f"Rs. {calc_res['grand_total']:,.2f}")
+
+    if stock_audit.get('has_insufficient_stock'):
+        st.info("ℹ️ **Notice**: Commercial Quotation creation will proceed with current stock status indicators.")
 
     st.markdown("<br>", unsafe_allow_html=True)
     if st.button("🚀 Confirm & Generate Commercial Quotation PDF", type="primary", use_container_width=True):
@@ -191,10 +217,28 @@ def render_billing_builder(mode="invoice"):
         
     icon_cls = "fa-solid fa-file-invoice-dollar" if mode == "invoice" else "fa-solid fa-file-lines"
     title_text = "Tax Invoice Builder" if mode == "invoice" else "Commercial Quotation Builder"
-    sub_text = "Create GST Tax Invoices with instant PDF preview & download." if mode == "invoice" else "Create Commercial Price Quotations with instant PDF preview & download."
+    sub_text = "Create GST Tax Invoices with real-time stock status verification & instant PDF generation." if mode == "invoice" else "Create Commercial Price Quotations with dynamic stock review & PDF export."
     
     render_html(f'<div class="section-head"><i class="{icon_cls}"></i> {title_text}</div>')
     st.caption(sub_text)
+
+    # Top Toolbar: Dynamic Stock Status Uploader Expander
+    with st.expander("⚡ Upload / Refresh Dynamic Stock Status (.xlsx)"):
+        st.caption("Upload updated dynamic `STOCK STATUS.xlsx` to instantly update inventory levels across the system.")
+        up_stock = st.file_uploader("Choose STOCK STATUS.xlsx", type=["xlsx", "xls"], key=f"up_stock_{mode}")
+        if up_stock is not None:
+            if st.button("📥 Import Stock Status File", key=f"btn_import_stock_{mode}"):
+                with st.spinner("Importing dynamic stock status..."):
+                    import tempfile
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as tmp:
+                        tmp.write(up_stock.getvalue())
+                        tmp_path = tmp.name
+                    res = ImportService.import_inventory(tmp_path, imported_by=f"UI Uploader ({mode})")
+                    if res['status'] in ('success', 'partial_success'):
+                        trigger_toast(f"Successfully updated {res['successful_records']:,} stock records!", icon="⚡")
+                        st.rerun()
+                    else:
+                        st.error(f"Stock import failed: {', '.join(res['errors'])}")
 
     # Display Download Button & PDF Preview Below if document was just created
     pdf_key = f"created_{mode}_pdf"
@@ -286,7 +330,7 @@ def render_billing_builder(mode="invoice"):
     # --- LEFT SIDE: 2-COLUMN MULTI-ENTRY TABLE GRID (PART NUMBER & QUANTITY ONLY) ---
     with c_left:
         st.markdown("##### 📋 Multi-Entry Table [Part Number & Quantity Only] (Left)")
-        st.caption("Enter/paste ONLY Part Number and Quantity. Rates, discounts, and totals are calculated automatically!")
+        st.caption("Enter/paste ONLY Part Number and Quantity. Costs are pulled from `STATIC PRICE LIST.xlsx` automatically!")
         
         # 2-Column Empty Table Grid with Versioned Key for Instant Reset
         ver_key = f"{mode}_grid_version"
@@ -330,7 +374,7 @@ def render_billing_builder(mode="invoice"):
                         grid_added += 1
                         
                 if grid_added > 0:
-                    trigger_toast(f"Added {grid_added} items! Rates & discounts imported automatically.", icon="📋")
+                    trigger_toast(f"Added {grid_added} items! Static rates imported automatically.", icon="📋")
                     st.rerun()
                 else:
                     st.warning("No matching part numbers found in filled table rows.")
@@ -380,7 +424,7 @@ def render_billing_builder(mode="invoice"):
                 trigger_toast(f"Added {prod_obj['part_number']} to order list!", icon="🛒")
                 st.rerun()
 
-    # 3. Order Line Items Data Editor Grid
+    # 3. Order Line Items Data Editor Grid & Real-time Stock Verification
     cart_items = st.session_state[session_key]
     if not cart_items:
         st.info("No line items added yet. Enter Part Number & Quantity on the left or select a product on the right to build an order.")
@@ -396,13 +440,25 @@ def render_billing_builder(mode="invoice"):
             trigger_toast("Cleared all order items!", icon="🗑️")
             st.rerun()
 
-    # Prepare DataFrame for st.data_editor (Review columns ONLY)
+    # Verify Stock Availability against dynamic STOCK STATUS
+    from app.services.inventory_service import InventoryService
+    stock_audit = InventoryService.verify_stock_availability(cart_items)
+    audit_map = {item['part_number']: item for item in stock_audit.get('items', [])}
+
+    # Prepare DataFrame for st.data_editor with Stock Review Status
     grid_rows = []
     for idx, item in enumerate(cart_items):
+        audit = audit_map.get(item['part_number'], {})
+        shortfall = audit.get('shortfall', 0.0)
+        is_bad = audit.get('is_insufficient', False)
+        status_str = f"⚠️ Shortfall ({shortfall:,.0f} Pcs)" if is_bad else "✅ In Stock"
+
         grid_rows.append({
             "#": idx + 1,
             "Part Number": item['part_number'],
             "Quantity (PCS)": float(item['quantity']),
+            "Available Stock": float(audit.get('current_stock', 0.0)),
+            "Stock Status": status_str,
             "Discount %": float(item['discount_percentage']),
             "Rate / 100 Pcs (INR)": float(item['unit_price_100'])
         })
@@ -415,6 +471,8 @@ def render_billing_builder(mode="invoice"):
             "#": st.column_config.NumberColumn(disabled=True),
             "Part Number": st.column_config.TextColumn(disabled=True),
             "Quantity (PCS)": st.column_config.NumberColumn(min_value=1.0, step=10.0),
+            "Available Stock": st.column_config.NumberColumn(disabled=True),
+            "Stock Status": st.column_config.TextColumn(disabled=True),
             "Discount %": st.column_config.NumberColumn(min_value=0.0, max_value=100.0, step=0.5),
             "Rate / 100 Pcs (INR)": st.column_config.NumberColumn(disabled=True)
         },
@@ -428,6 +486,11 @@ def render_billing_builder(mode="invoice"):
         if idx < len(cart_items):
             cart_items[idx]['quantity'] = float(row['Quantity (PCS)'])
             cart_items[idx]['discount_percentage'] = float(row['Discount %'])
+
+    # Non-blocking Stock Shortfall Notice
+    if stock_audit.get('has_insufficient_stock'):
+        insuff_items = [f"{i['part_number']} (Short: {i['shortfall']:,.0f} Pcs)" for i in stock_audit['items'] if i['is_insufficient']]
+        st.warning(f"⚠️ **Dynamic Stock Shortfall Notice**: `{', '.join(insuff_items)}`. Creation will proceed as requested.")
 
     # 4. Calculation Summary
     cust_payload = {
@@ -455,13 +518,13 @@ def render_billing_builder(mode="invoice"):
 
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # 5. Open Large Confirmation Modal Dialog Button
+    # 5. Open Large Confirmation Modal Dialog Button with Stock Audit Review
     if mode == "invoice":
         if st.button("📜 Proceed to Review & Generate Tax Invoice (INV)", use_container_width=True, type="primary"):
-            show_invoice_confirmation_modal(cust_payload, cart_items, calc_res)
+            show_invoice_confirmation_modal(cust_payload, cart_items, calc_res, stock_audit)
     else:
         if st.button("📄 Proceed to Review & Generate Commercial Quotation (QTN)", use_container_width=True, type="primary"):
-            show_quotation_confirmation_modal(cust_payload, cart_items, calc_res)
+            show_quotation_confirmation_modal(cust_payload, cart_items, calc_res, stock_audit)
 
 def render_tax_invoice_tab():
     render_billing_builder(mode="invoice")

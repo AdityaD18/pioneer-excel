@@ -87,10 +87,19 @@ def init_db():
         raise ex
 
 def reseed_database_from_excel():
-    """Clears stale products, costs, and inventory, then re-imports fresh from group order status.xlsx."""
-    if not os.path.exists(Config.STOCK_SOURCE_PATH):
-        db_logger.warning(f"Stock source path '{Config.STOCK_SOURCE_PATH}' not found for reseeding.")
+    """Clears stale products, costs, and inventory, then re-imports fresh from STATIC PRICE LIST.xlsx and STOCK STATUS.xlsx."""
+    base_dir = Config.BASE_DIR
+    price_path = os.path.join(base_dir, "STATIC PRICE LIST.xlsx")
+    stock_path = os.path.join(base_dir, "STOCK STATUS.xlsx")
+    fallback_path = Config.STOCK_SOURCE_PATH
+    
+    cost_file = price_path if os.path.exists(price_path) else (fallback_path if os.path.exists(fallback_path) else None)
+    stock_file = stock_path if os.path.exists(stock_path) else (fallback_path if os.path.exists(fallback_path) else None)
+    
+    if not cost_file and not stock_file:
+        db_logger.warning("No valid Excel price or stock source files found for database reseeding.")
         return False
+        
     try:
         conn = get_db_connection()
         conn.execute("PRAGMA foreign_keys = OFF;")
@@ -101,10 +110,15 @@ def reseed_database_from_excel():
         conn.close()
         
         from app.services.import_service import ImportService
-        db_logger.info(f"Seeding catalog costs & stock from {Config.STOCK_SOURCE_PATH}...")
-        ImportService.import_costs(Config.STOCK_SOURCE_PATH, sheet_name="PRICE LIST", imported_by="System Initializer")
-        ImportService.import_inventory(Config.STOCK_SOURCE_PATH, sheet_name="Stock Group Reorder Status", imported_by="System Initializer")
-        db_logger.info("Catalog re-seeded successfully.")
+        if cost_file:
+            db_logger.info(f"Seeding catalog costs from {cost_file}...")
+            ImportService.import_costs(cost_file, imported_by="Static Price List Initializer")
+            
+        if stock_file:
+            db_logger.info(f"Seeding inventory stock levels from {stock_file}...")
+            ImportService.import_inventory(stock_file, imported_by="Stock Status Initializer")
+            
+        db_logger.info("Catalog & stock re-seeded successfully.")
         return True
     except Exception as e:
         db_logger.error(f"Failed to reseed database from Excel: {e}", exc_info=True)

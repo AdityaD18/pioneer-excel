@@ -82,23 +82,39 @@ def render_settings_tab():
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # 3. Static Price List Excel Import
-    render_html('<div class="setting-section"><div class="setting-section-title"><i class="fa-solid fa-file-excel"></i> Static Price List Import (Excel)</div></div>')
+    # 3. Static Price List Excel Import & Dynamic Stock Status Import
+    render_html('<div class="setting-section"><div class="setting-section-title"><i class="fa-solid fa-file-excel"></i> Static Price List & Dynamic Stock Status Importers</div></div>')
     
-    st.caption("Upload static 'PRICE LIST.xlsx' to update product cost price rates and packing quantities.")
-    up_cost = st.file_uploader("Choose Price List Excel File", type=["xlsx", "xls"], key="file_up_cost")
-    if up_cost and st.button("🚀 Process Price List Import", type="primary", key="btn_imp_cost"):
-        with st.spinner("Parsing cost list price sheet..."):
-            res = provider.import_costs(up_cost, filename=up_cost.name, imported_by="Streamlit Admin")
-            if res['status'] in ('success', 'partial_success'):
-                trigger_toast(f"Imported {res['successful_records']:,} cost rates!", icon="✅")
-                st.rerun()
-            else:
-                st.error(f"Import failed: {', '.join(res['errors'])}")
+    col_up1, col_up2 = st.columns(2)
+    with col_up1:
+        st.markdown("##### 💵 Static Price List (`STATIC PRICE LIST.xlsx`)")
+        st.caption("Upload static price list to update product cost price rates per 100 Pcs.")
+        up_cost = st.file_uploader("Choose Price List Excel File", type=["xlsx", "xls"], key="file_up_cost")
+        if up_cost and st.button("🚀 Process Price List Import", type="primary", key="btn_imp_cost", use_container_width=True):
+            with st.spinner("Parsing static price list sheet..."):
+                res = provider.import_costs(up_cost, filename=up_cost.name, imported_by="Streamlit Admin")
+                if res['status'] in ('success', 'partial_success'):
+                    trigger_toast(f"Imported {res['successful_records']:,} static cost rates!", icon="✅")
+                    st.rerun()
+                else:
+                    st.error(f"Import failed: {', '.join(res['errors'])}")
+
+    with col_up2:
+        st.markdown("##### 📦 Dynamic Stock Status (`STOCK STATUS.xlsx`)")
+        st.caption("Upload dynamic stock status sheet to update live available stock levels.")
+        up_stock = st.file_uploader("Choose Stock Status Excel File", type=["xlsx", "xls"], key="file_up_stock")
+        if up_stock and st.button("🚀 Process Stock Status Import", type="primary", key="btn_imp_stock", use_container_width=True):
+            with st.spinner("Parsing dynamic stock status sheet..."):
+                res = provider.import_inventory(up_stock, filename=up_stock.name, imported_by="Streamlit Admin")
+                if res['status'] in ('success', 'partial_success'):
+                    trigger_toast(f"Imported {res['successful_records']:,} stock status records!", icon="✅")
+                    st.rerun()
+                else:
+                    st.error(f"Import failed: {', '.join(res['errors'])}")
 
     st.markdown("<br>", unsafe_allow_html=True)
     render_html('<div class="setting-section"><div class="setting-section-title"><i class="fa-solid fa-arrows-rotate"></i> Reseed & Update Catalog</div></div>')
-    st.caption("Re-import all cost price rates and inventory stock levels cleanly from 'group order status.xlsx'.")
+    st.caption("Re-import all cost price rates and inventory stock levels cleanly from `STATIC PRICE LIST.xlsx` and `STOCK STATUS.xlsx`.")
     if st.button("🔄 Force Reseed & Update Catalog from Excel", key="btn_reseed_db", type="secondary", use_container_width=True):
         with st.spinner("Clearing stale rows and re-importing fresh costs and stock..."):
             from app.models.database import reseed_database_from_excel
@@ -107,4 +123,4 @@ def render_settings_tab():
                 trigger_toast("Successfully re-seeded database with clean cost prices & stock!", icon="🔄")
                 st.rerun()
             else:
-                st.error("Failed to locate 'group order status.xlsx' or re-seed catalog.")
+                st.error("Failed to locate Excel source files or re-seed catalog.")
