@@ -27,22 +27,22 @@ class CustomerRepository(BaseRepository):
         return dict(row) if row else None
 
     @classmethod
-    def save(cls, name, discount_percentage, gst_number=None, payment_terms=None):
+    def save(cls, name, discount_percentage, gst_number=None, payment_terms=None, transport_insurance_terms=None):
         now_str = datetime.now().isoformat()
         return cls.execute(
-            """INSERT INTO CUSTOMERS (name, discount_percentage, gst_number, payment_terms, created_at, updated_at) 
-               VALUES (?, ?, ?, ?, ?, ?)""",
-            (name.strip(), discount_percentage, gst_number or None, payment_terms or None, now_str, now_str)
+            """INSERT INTO CUSTOMERS (name, discount_percentage, gst_number, payment_terms, transport_insurance_terms, created_at, updated_at) 
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (name.strip(), discount_percentage, gst_number or None, payment_terms or None, transport_insurance_terms or None, now_str, now_str)
         )
 
     @classmethod
-    def update(cls, customer_id, name, discount_percentage, gst_number=None, payment_terms=None):
+    def update(cls, customer_id, name, discount_percentage, gst_number=None, payment_terms=None, transport_insurance_terms=None):
         now_str = datetime.now().isoformat()
         cls.execute(
             """UPDATE CUSTOMERS 
-               SET name = ?, discount_percentage = ?, gst_number = ?, payment_terms = ?, updated_at = ? 
+               SET name = ?, discount_percentage = ?, gst_number = ?, payment_terms = ?, transport_insurance_terms = ?, updated_at = ? 
                WHERE id = ?""",
-            (name.strip(), discount_percentage, gst_number or None, payment_terms or None, now_str, customer_id)
+            (name.strip(), discount_percentage, gst_number or None, payment_terms or None, transport_insurance_terms or None, now_str, customer_id)
         )
 
     @classmethod

@@ -68,6 +68,13 @@ def init_db():
             if "hide_pricing_details" not in doc_columns:
                 db_logger.info(f"Applying migration: ALTER TABLE {doc_table} ADD COLUMN hide_pricing_details")
                 cursor.execute(f"ALTER TABLE {doc_table} ADD COLUMN hide_pricing_details INTEGER DEFAULT 0;")
+
+        # Migration: add transport_insurance_terms to CUSTOMERS
+        cursor.execute("PRAGMA table_info(CUSTOMERS)")
+        customer_columns = [col[1] for col in cursor.fetchall()]
+        if "transport_insurance_terms" not in customer_columns:
+            db_logger.info("Applying migration: ALTER TABLE CUSTOMERS ADD COLUMN transport_insurance_terms")
+            cursor.execute("ALTER TABLE CUSTOMERS ADD COLUMN transport_insurance_terms TEXT NULL;")
         
         # Migration: Add packing_quantity_text column to PRODUCTS (stores TBC or numeric as text)
         cursor.execute("PRAGMA table_info(PRODUCTS)")

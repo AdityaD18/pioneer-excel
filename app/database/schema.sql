@@ -51,6 +51,7 @@ CREATE TABLE IF NOT EXISTS CUSTOMERS (
     discount_percentage REAL DEFAULT 0,
     gst_number TEXT NULL,
     payment_terms TEXT NULL,
+    transport_insurance_terms TEXT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

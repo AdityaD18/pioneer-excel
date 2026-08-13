@@ -18,7 +18,7 @@ class CustomerService:
         return CustomerRepository.get_by_name(name)
 
     @staticmethod
-    def create_customer(name, discount_percentage, gst_number=None, payment_terms=None):
+    def create_customer(name, discount_percentage, gst_number=None, payment_terms=None, transport_insurance_terms=None):
         """Creates a new customer record."""
         name_clean = name.strip()
         if not name_clean:
@@ -37,12 +37,12 @@ class CustomerService:
         except (ValueError, TypeError):
             discount = 0.0
             
-        customer_id = CustomerRepository.save(name_clean, discount, gst_number=gst_number, payment_terms=payment_terms)
+        customer_id = CustomerRepository.save(name_clean, discount, gst_number=gst_number, payment_terms=payment_terms, transport_insurance_terms=transport_insurance_terms)
         billing_logger.info(f"Created customer '{name_clean}' (ID: {customer_id}, Discount: {discount}%).")
         return CustomerRepository.get_by_id(customer_id)
 
     @staticmethod
-    def update_customer(customer_id, name, discount_percentage, gst_number=None, payment_terms=None):
+    def update_customer(customer_id, name, discount_percentage, gst_number=None, payment_terms=None, transport_insurance_terms=None):
         """Updates an existing customer record."""
         customer = CustomerRepository.get_by_id(customer_id)
         if not customer:
@@ -67,7 +67,7 @@ class CustomerService:
         except (ValueError, TypeError):
             discount = 0.0
             
-        CustomerRepository.update(customer_id, name_clean, discount, gst_number=gst_number, payment_terms=payment_terms)
+        CustomerRepository.update(customer_id, name_clean, discount, gst_number=gst_number, payment_terms=payment_terms, transport_insurance_terms=transport_insurance_terms)
         billing_logger.info(f"Updated customer '{name_clean}' (ID: {customer_id}).")
         return CustomerRepository.get_by_id(customer_id)
 
