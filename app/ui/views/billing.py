@@ -18,7 +18,7 @@ def find_matching_product(p_code_raw, all_prods):
     if not p_code_raw or not str(p_code_raw).strip():
         return None
     raw_str = str(p_code_raw).strip()
-    clean_str = raw_str.split('/')[0].strip().lower()
+    clean_str = raw_str.lower()
     norm_str = ImportService.normalize_part_number(raw_str)
     
     # 1. Exact match on clean/raw part_number

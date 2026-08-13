@@ -25,14 +25,20 @@ class ImportService:
 
     @staticmethod
     def normalize_part_number(code):
-        """Normalizes part numbers by stripping packaging suffixes (/...) and segment leading zeros for reliable cross-sheet matching."""
+        """Normalizes part numbers by preserving variant suffixes (/...) while stripping segment leading zeros for reliable cross-sheet matching."""
         if not code:
             return ""
-        c = str(code).split('/')[0].strip()
+        c = str(code).strip()
         if c.endswith('.0'):
             c = c[:-2]
-        parts = [p.lstrip('0') or '0' for p in c.split('-')]
-        return '-'.join(parts).lower()
+        
+        slash_parts = c.split('/')
+        norm_slash_parts = []
+        for sp in slash_parts:
+            dash_parts = [p.lstrip('0') or '0' for p in sp.strip().split('-')]
+            norm_slash_parts.append('-'.join(dash_parts))
+        
+        return '/'.join(norm_slash_parts).lower()
 
     @classmethod
     def import_inventory(cls, file_path, sheet_name=EXCEL_STOCK_SHEET_NAME, filename='uploaded_file.xlsx', imported_by=None):
@@ -125,7 +131,7 @@ class ImportService:
             if not raw_item_code or raw_item_code.lower() == 'nan' or raw_item_code.lower() == 'total':
                 continue
                 
-            clean_item_code = raw_item_code.split('/')[0].strip()
+            clean_item_code = raw_item_code.strip()
             norm_code = cls.normalize_part_number(raw_item_code)
             
             savepoint_name = f"sp_inv_{idx}"
@@ -350,7 +356,7 @@ class ImportService:
             if not raw_item_code or raw_item_code.lower() == 'nan' or raw_item_code.lower() == 'total':
                 continue
                 
-            clean_item_code = raw_item_code.split('/')[0].strip()
+            clean_item_code = raw_item_code.strip()
             norm_code = cls.normalize_part_number(raw_item_code)
                 
             savepoint_name = f"sp_cost_{idx}"
