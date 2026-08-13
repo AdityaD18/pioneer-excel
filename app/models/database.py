@@ -58,6 +58,15 @@ def init_db():
                 db_logger.info(f"Applying migration: ALTER TABLE INVENTORY ADD COLUMN {col_name}")
                 cursor.execute(f"ALTER TABLE INVENTORY ADD COLUMN {col_name} {col_type};")
         
+        # Migration: Add packing_quantity_text column to PRODUCTS (stores TBC or numeric as text)
+        cursor.execute("PRAGMA table_info(PRODUCTS)")
+        prod_cols = [col[1] for col in cursor.fetchall()]
+        if 'packing_quantity_text' not in prod_cols:
+            db_logger.info("Applying migration: ALTER TABLE PRODUCTS ADD COLUMN packing_quantity_text TEXT DEFAULT '1'")
+            cursor.execute("ALTER TABLE PRODUCTS ADD COLUMN packing_quantity_text TEXT DEFAULT '1';")
+            cursor.execute("UPDATE PRODUCTS SET packing_quantity_text = CAST(packing_quantity AS TEXT);")
+            db_logger.info("Backfilled packing_quantity_text from packing_quantity.")
+        
         # Seed 1 Demo Customer
         cursor = conn.cursor()
         cursor.execute("SELECT COUNT(*) FROM CUSTOMERS")

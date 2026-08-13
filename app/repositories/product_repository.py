@@ -16,8 +16,8 @@ class ProductRepository(BaseRepository):
                 p.id as product_id,
                 p.series as "Series",
                 p.part_number as "Item Code",
-                p.packing_quantity as "Packing Quantity PCS",
-                COALESCE(c.price_per_100_pcs, 0.0) as 'Price in " Per 100pcs'
+                COALESCE(c.price_per_100_pcs, 0.0) as 'Price in " Per 100pcs',
+                COALESCE(p.packing_quantity_text, CAST(p.packing_quantity AS TEXT), '1') as "Packing Quantity PCS"
             FROM PRODUCTS p
             LEFT JOIN PRODUCT_COSTS c ON p.id = c.product_id AND c.is_current = 1
             WHERE 1=1

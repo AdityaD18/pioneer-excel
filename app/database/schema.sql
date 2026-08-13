@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS PRODUCTS (
     series TEXT NULL,
     make TEXT NULL,
     unit TEXT DEFAULT 'PCS',
-    packing_quantity INTEGER DEFAULT 1
+    packing_quantity TEXT DEFAULT '1'
 );
 
 CREATE INDEX IF NOT EXISTS idx_products_part_number ON PRODUCTS(part_number);

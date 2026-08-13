@@ -373,14 +373,19 @@ class ImportService:
                 except ValueError:
                     raise ValueError(f"Invalid price numeric value '{raw_price}'")
                 
-                packing_qty = 1
+                packing_qty = '1'
                 if packing_col:
                     raw_packing = row.get(packing_col)
                     if pd.notna(raw_packing):
-                        try:
-                            packing_qty = int(float(str(raw_packing).replace('TBC', '1').replace(',', '').strip()))
-                        except ValueError:
-                            packing_qty = 1
+                        raw_str = str(raw_packing).strip()
+                        # Store exactly as-is from Excel: 'TBC', '100', '5000', etc.
+                        if raw_str.upper() == 'TBC':
+                            packing_qty = 'TBC'
+                        elif raw_str and raw_str.lower() not in ('nan', ''):
+                            try:
+                                packing_qty = str(int(float(raw_str.replace(',', ''))))
+                            except ValueError:
+                                packing_qty = raw_str
 
                 series_val = str(row.get(series_col, '')).strip() if series_col else (clean_item_code.split('-')[0] if '-' in clean_item_code else None)
                 if series_val == 'nan' or not series_val:
@@ -389,14 +394,14 @@ class ImportService:
                 product_id = norm_prod_cache.get(norm_code)
                 if product_id is None:
                     cur.execute(
-                        "INSERT INTO PRODUCTS (part_number, part_name, series, make, packing_quantity) VALUES (?, ?, ?, ?, ?)",
-                        (clean_item_code, clean_item_code, series_val, Config.DEFAULT_MAKE, packing_qty)
+                        "INSERT INTO PRODUCTS (part_number, part_name, series, make, packing_quantity, packing_quantity_text) VALUES (?, ?, ?, ?, ?, ?)",
+                        (clean_item_code, clean_item_code, series_val, Config.DEFAULT_MAKE, 1, packing_qty)
                     )
                     product_id = cur.lastrowid
                     norm_prod_cache[norm_code] = product_id
                 else:
                     cur.execute(
-                        "UPDATE PRODUCTS SET packing_quantity = ?, series = ? WHERE id = ?",
+                        "UPDATE PRODUCTS SET packing_quantity_text = ?, series = ? WHERE id = ?",
                         (packing_qty, series_val, product_id)
                     )
                 
