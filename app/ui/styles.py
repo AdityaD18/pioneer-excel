@@ -296,8 +296,13 @@ def inject_custom_css():
     }
 
     /* ---------- Inputs ---------- */
+    /* Backgrounds/text colors are forced explicitly (not just inherited
+       from the theme) so the app renders identically regardless of the
+       visitor's browser/OS dark-mode preference. */
     .stTextInput input, .stNumberInput input, .stDateInput input,
     .stTextArea textarea, div[data-baseweb="select"] > div {
+        background-color: var(--pt-surface) !important;
+        color: var(--pt-text-primary) !important;
         border-radius: var(--pt-radius-sm) !important;
         border: 1px solid var(--pt-border-strong) !important;
         font-size: 13.5px;
@@ -309,10 +314,30 @@ def inject_custom_css():
         box-shadow: 0 0 0 3px rgba(44, 82, 130, 0.12) !important;
     }
 
+    /* The dropdown option list renders in a separate floating popover,
+       not inside the select element itself - style it explicitly too. */
+    div[data-baseweb="popover"] ul[role="listbox"],
+    div[data-baseweb="menu"] {
+        background-color: var(--pt-surface) !important;
+        border: 1px solid var(--pt-border) !important;
+        border-radius: var(--pt-radius-sm) !important;
+        box-shadow: var(--pt-shadow-md) !important;
+    }
+    div[data-baseweb="popover"] li,
+    div[data-baseweb="menu"] li {
+        background-color: var(--pt-surface) !important;
+        color: var(--pt-text-primary) !important;
+    }
+    div[data-baseweb="popover"] li:hover,
+    div[data-baseweb="menu"] li:hover {
+        background-color: var(--pt-bg) !important;
+    }
+
     div[data-testid="stWidgetLabel"] {
         font-size: 13px !important;
         font-weight: 600 !important;
         color: var(--pt-text-secondary) !important;
+        opacity: 1 !important;
     }
 
     /* ---------- Expanders ---------- */
