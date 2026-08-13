@@ -8,10 +8,13 @@ from app.core.logger import billing_logger
 
 class QuotationService:
     @classmethod
-    def generate_quotation(cls, customer_input, items_input, quotation_date=None):
+    def generate_quotation(cls, customer_input, items_input, quotation_date=None, hide_pricing_details=False):
         """
         Creates and persists a Quotation with a unique sequential QTN number.
         Uses SQLite IMMEDIATE transaction sequencing to prevent duplicates.
+        hide_pricing_details: when True, the generated PDF (now and on any
+        future re-download) shows only Discounted Price, Quantity, and
+        Delivery Terms per line - list price and discount % are omitted.
         """
         billing_logger.info(f"Generating quotation for customer: {customer_input.get('name')}")
         
@@ -84,13 +87,14 @@ class QuotationService:
                         quotation_number, customer_id, customer_name_snapshot, 
                         customer_gst_snapshot, customer_terms_snapshot, 
                         discount_percentage, subtotal, discount_amount, 
-                        gst_amount, grand_total, gst_rate, created_at
-                   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                        gst_amount, grand_total, gst_rate, hide_pricing_details, created_at
+                   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     quotation_number, customer_id, customer_name,
                     gst_number or cust['gst_number'], payment_terms or cust['payment_terms'],
                     discount_percentage, calc['subtotal'], 0.0,
                     calc['gst_amount'], calc['grand_total'], calc['gst_rate'],
+                    1 if hide_pricing_details else 0,
                     datetime.now().isoformat()
                 )
             )

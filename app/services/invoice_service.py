@@ -7,10 +7,13 @@ from app.core.logger import billing_logger
 
 class InvoiceService:
     @classmethod
-    def generate_invoice_for_order(cls, order_id, invoice_date=None):
+    def generate_invoice_for_order(cls, order_id, invoice_date=None, hide_pricing_details=False):
         """
         Generates and persists a unique Invoice for a given order_id.
         Uses SQLite IMMEDIATE transaction sequencing to prevent duplicates in concurrent environments.
+        hide_pricing_details: when True, the generated PDF (now and on any
+        future re-download) shows only Discounted Price, Quantity, and
+        Delivery Terms per line - list price and discount % are omitted.
         """
         billing_logger.info(f"Generating invoice for order_id: {order_id}")
         
@@ -60,9 +63,9 @@ class InvoiceService:
             
             # 3. Create invoice referencing the order
             cur.execute(
-                """INSERT INTO INVOICES (invoice_number, order_id, invoice_date, created_at) 
-                   VALUES (?, ?, ?, ?)""",
-                (invoice_number, order_id, invoice_date, datetime.now().isoformat())
+                """INSERT INTO INVOICES (invoice_number, order_id, invoice_date, hide_pricing_details, created_at) 
+                   VALUES (?, ?, ?, ?, ?)""",
+                (invoice_number, order_id, invoice_date, 1 if hide_pricing_details else 0, datetime.now().isoformat())
             )
             invoice_id = cur.lastrowid
             

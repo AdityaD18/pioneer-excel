@@ -57,6 +57,17 @@ def init_db():
             if col_name not in columns:
                 db_logger.info(f"Applying migration: ALTER TABLE INVENTORY ADD COLUMN {col_name}")
                 cursor.execute(f"ALTER TABLE INVENTORY ADD COLUMN {col_name} {col_type};")
+
+        # Migration: add hide_pricing_details flag to INVOICES/QUOTATIONS so
+        # PDFs regenerated later (e.g. from History Ledger) continue to
+        # respect the setting chosen at creation time, instead of it being
+        # a transient UI-only toggle.
+        for doc_table in ("INVOICES", "QUOTATIONS"):
+            cursor.execute(f"PRAGMA table_info({doc_table})")
+            doc_columns = [col[1] for col in cursor.fetchall()]
+            if "hide_pricing_details" not in doc_columns:
+                db_logger.info(f"Applying migration: ALTER TABLE {doc_table} ADD COLUMN hide_pricing_details")
+                cursor.execute(f"ALTER TABLE {doc_table} ADD COLUMN hide_pricing_details INTEGER DEFAULT 0;")
         
         # Migration: Add packing_quantity_text column to PRODUCTS (stores TBC or numeric as text)
         cursor.execute("PRAGMA table_info(PRODUCTS)")

@@ -92,7 +92,7 @@ def parse_pasted_products_text(raw_text, all_prods, default_discount=0.0):
     return parsed_items, unrecognized_count
 
 @st.dialog("📜 Review & Confirm Tax Invoice Generation", width="large")
-def show_invoice_confirmation_modal(cust_payload, cart_items, calc_res, stock_audit):
+def show_invoice_confirmation_modal(cust_payload, cart_items, calc_res, stock_audit, hide_pricing_details=False):
     st.markdown(f"## Customer: **{cust_payload['name']}**")
     if cust_payload.get('gst_number'):
         st.caption(f"🏢 GSTIN: `{cust_payload['gst_number']}` | Payment Terms: `{cust_payload['payment_terms']}`")
@@ -134,10 +134,13 @@ def show_invoice_confirmation_modal(cust_payload, cart_items, calc_res, stock_au
     if stock_audit.get('has_insufficient_stock'):
         st.warning("⚠️ **Notice**: One or more products have stock shortfalls. Tax Invoice creation will proceed as requested.")
 
+    if hide_pricing_details:
+        st.info("🙈 **Simplified pricing mode is ON** for this document: the PDF will hide the list rate and discount % per line, showing only the discounted price, quantity, total, and delivery terms.")
+
     st.markdown("<br>", unsafe_allow_html=True)
     if st.button("🚀 Confirm & Generate Tax Invoice PDF", type="primary", width='stretch'):
         o_id = OrderService.create_order(cust_payload, cart_items)
-        inv_id = InvoiceService.generate_invoice_for_order(o_id)
+        inv_id = InvoiceService.generate_invoice_for_order(o_id, hide_pricing_details=hide_pricing_details)
         inv_data = InvoiceService.get_invoice_by_id(inv_id)
         inv_html = generate_invoice_html(inv_data)
         inv_pdf = generate_pdf_from_html(inv_html)
@@ -148,7 +151,7 @@ def show_invoice_confirmation_modal(cust_payload, cart_items, calc_res, stock_au
         st.rerun()
 
 @st.dialog("📄 Review & Confirm Commercial Quotation Generation", width="large")
-def show_quotation_confirmation_modal(cust_payload, cart_items, calc_res, stock_audit):
+def show_quotation_confirmation_modal(cust_payload, cart_items, calc_res, stock_audit, hide_pricing_details=False):
     st.markdown(f"## Customer: **{cust_payload['name']}**")
     if cust_payload.get('gst_number'):
         st.caption(f"🏢 GSTIN: `{cust_payload['gst_number']}` | Payment Terms: `{cust_payload['payment_terms']}`")
@@ -190,9 +193,12 @@ def show_quotation_confirmation_modal(cust_payload, cart_items, calc_res, stock_
     if stock_audit.get('has_insufficient_stock'):
         st.info("ℹ️ **Notice**: Commercial Quotation creation will proceed with current stock status indicators.")
 
+    if hide_pricing_details:
+        st.info("🙈 **Simplified pricing mode is ON** for this document: the PDF will hide the list rate and discount % per line, showing only the discounted price, quantity, total, and delivery terms.")
+
     st.markdown("<br>", unsafe_allow_html=True)
     if st.button("🚀 Confirm & Generate Commercial Quotation PDF", type="primary", width='stretch'):
-        q_id = QuotationService.generate_quotation(cust_payload, cart_items)
+        q_id = QuotationService.generate_quotation(cust_payload, cart_items, hide_pricing_details=hide_pricing_details)
         q_data = QuotationService.get_quotation_by_id(q_id)
         q_html = generate_quotation_html(q_data)
         q_pdf = generate_pdf_from_html(q_html)
@@ -517,14 +523,22 @@ def render_billing_builder(mode="invoice"):
             st.rerun()
 
     st.markdown("<br>", unsafe_allow_html=True)
+
+    hide_pricing_details = st.checkbox(
+        "🙈 Hide List Price & Discount % on PDF (show only Discounted Price, Quantity & Delivery Terms)",
+        key=f"{mode}_hide_pricing_details",
+        help="When enabled, the generated PDF omits the Rate (per pc) and Discount % columns entirely. Only the final discounted price, quantity, line total, and delivery terms are shown to the customer."
+    )
+
+    st.markdown("<br>", unsafe_allow_html=True)
     
     # 5. Open Large Confirmation Modal Dialog Button with Stock Audit Review
     if mode == "invoice":
         if st.button("📜 Proceed to Review & Generate Tax Invoice (INV)", width='stretch', type="primary"):
-            show_invoice_confirmation_modal(cust_payload, cart_items, calc_res, stock_audit)
+            show_invoice_confirmation_modal(cust_payload, cart_items, calc_res, stock_audit, hide_pricing_details=hide_pricing_details)
     else:
         if st.button("📄 Proceed to Review & Generate Commercial Quotation (QTN)", width='stretch', type="primary"):
-            show_quotation_confirmation_modal(cust_payload, cart_items, calc_res, stock_audit)
+            show_quotation_confirmation_modal(cust_payload, cart_items, calc_res, stock_audit, hide_pricing_details=hide_pricing_details)
 
 def render_tax_invoice_tab():
     render_billing_builder(mode="invoice")
