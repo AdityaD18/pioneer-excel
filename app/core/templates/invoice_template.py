@@ -4,7 +4,7 @@ from app.core.templates.document_chrome import (
     base_styles,
     render_document_header,
     render_party_and_transport_block,
-    render_bank_and_summary,
+    render_summary,
     render_terms_and_signature,
     render_footer,
 )
@@ -40,7 +40,7 @@ def generate_invoice_html(invoice_data):
         transport_insurance_terms=order.get('customer_transport_insurance_snapshot'),
     )
 
-    bank_and_summary = render_bank_and_summary(
+    summary_block = render_summary(
         subtotal=order['subtotal'],
         gst_rate=order['gst_rate'],
         gst_amount=order['gst_amount'],
@@ -77,7 +77,7 @@ def generate_invoice_html(invoice_data):
             </tbody>
         </table>
 
-        {bank_and_summary}
+        {summary_block}
         {terms_and_signature}
         {footer}
     </body>

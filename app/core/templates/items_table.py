@@ -11,22 +11,21 @@ def build_items_table_html(items, hide_pricing_details=False):
         discounted_rate_per_pc = rate_per_pc * (1 - discount_pct / 100)
 
     hide_pricing_details=False (default):
-        Shows RATE (PER PC), DISC %, and a DISCOUNTED PRICE column. The
-        calculation is shown as two stacked lines within the cell (list
-        rate, then "- X% = result") rather than one long inline string,
-        which wraps unpredictably mid-formula in a narrow column.
+        Shows RATE, DISC %, and DISCOUNTED PRICE as plain columns - the
+        Rate and Disc % columns already make the calculation visible, so
+        Discounted Price is just the clean final number rather than a
+        restated formula.
 
     hide_pricing_details=True:
-        Omits RATE (PER PC) and DISC % entirely. DISCOUNTED PRICE shows
-        only the final per-piece rate (no breakdown, since showing the
-        calculation would reveal the hidden discount %). Quantity,
-        Total, and Delivery Terms are unchanged either way.
+        Omits RATE and DISC % entirely. DISCOUNTED PRICE still shows just
+        the final per-piece rate. Quantity, Total, and Delivery Terms are
+        unchanged either way.
     """
     if hide_pricing_details:
         header_html = """
                 <tr>
                     <th width="6%">#</th>
-                    <th width="30%" style="text-align: left;">PART NUMBER / DESCRIPTION</th>
+                    <th width="30%" style="text-align: left;">PART NO. / DESCRIPTION</th>
                     <th width="10%" style="text-align: right;">QTY</th>
                     <th width="16%" style="text-align: right;">DISCOUNTED PRICE</th>
                     <th width="12%" style="text-align: right;">TOTAL</th>
@@ -37,13 +36,13 @@ def build_items_table_html(items, hide_pricing_details=False):
         header_html = """
                 <tr>
                     <th width="5%">#</th>
-                    <th width="21%" style="text-align: left;">PART NUMBER / DESCRIPTION</th>
+                    <th width="23%" style="text-align: left;">PART NO. / DESCRIPTION</th>
                     <th width="7%" style="text-align: right;">QTY</th>
-                    <th width="10%" style="text-align: right;">RATE / PC</th>
-                    <th width="6%" style="text-align: right;">DISC</th>
-                    <th width="16%" style="text-align: right;">DISCOUNTED PRICE</th>
+                    <th width="11%" style="text-align: right;">RATE</th>
+                    <th width="7%" style="text-align: right;">DISC</th>
+                    <th width="13%" style="text-align: right;">DISCOUNTED PRICE</th>
                     <th width="11%" style="text-align: right;">TOTAL</th>
-                    <th width="24%" style="text-align: center;">DELIVERY TERMS</th>
+                    <th width="23%" style="text-align: center;">DELIVERY TERMS</th>
                 </tr>
         """
 
@@ -75,11 +74,10 @@ def build_items_table_html(items, hide_pricing_details=False):
             <td style="text-align: right;">{item['quantity']:,.0f}</td>
             <td style="text-align: right;">Rs. {rate_per_pc:,.2f}</td>
             <td style="text-align: right;">{discount_pct:.1f}%</td>
-            <td style="text-align: right; font-size: 8pt;">Rs. {rate_per_pc:,.2f}<br>&minus; {discount_pct:.1f}% = <strong>Rs. {discounted_rate_per_pc:,.2f}</strong></td>
+            <td style="text-align: right;"><strong>Rs. {discounted_rate_per_pc:,.2f}</strong></td>
             <td style="text-align: right;">Rs. {item['line_total']:,.2f}</td>
             <td style="text-align: center; font-size: 8pt;">{delivery_term}</td>
         </tr>
             """
 
     return header_html, rows_html
-

@@ -69,7 +69,7 @@ def base_styles():
         .party-table { margin-bottom: 8px; }
         .party-box {
             border: 1px solid #D1D5DB;
-            padding: 7px 10px;
+            padding: 6px 10px;
             vertical-align: top;
         }
         .party-label {
@@ -77,10 +77,10 @@ def base_styles():
             font-weight: bold;
             color: #B8863B;
             letter-spacing: 0.6px;
-            margin-bottom: 4px;
+            margin-bottom: 3px;
         }
-        .party-name { font-size: 10.5pt; font-weight: bold; color: #0F1E33; }
-        .party-detail { font-size: 8.5pt; color: #374151; margin-top: 2px; }
+        .party-name { font-size: 10.5pt; font-weight: bold; color: #0F1E33; margin-bottom: 2px; }
+        .party-detail { font-size: 8.5pt; color: #374151; line-height: 1.5; }
 
         .transport-box {
             border: 1px solid #D1D5DB;
@@ -116,24 +116,6 @@ def base_styles():
         .items-table tbody tr.alt-row { background-color: #F7F8FA; }
 
         .bottom-section-table { margin-top: 8px; }
-
-        .bank-box {
-            border: 1px solid #D1D5DB;
-            padding: 6px 10px;
-            font-size: 8pt;
-            color: #374151;
-            vertical-align: top;
-        }
-        .bank-title {
-            font-size: 8pt;
-            font-weight: bold;
-            color: #0F1E33;
-            margin-bottom: 2px;
-            letter-spacing: 0.3px;
-        }
-        .bank-box table td { padding: 1px 0; font-size: 8pt; }
-        .bank-label { color: #6B7280; width: 40%; }
-        .bank-value { font-weight: bold; color: #1A1A1A; }
 
         .summary-box { vertical-align: top; }
         .summary-table td { padding: 2px 0; font-size: 9pt; }
@@ -246,7 +228,13 @@ def render_document_header(doc_label, doc_number_label, doc_number, doc_date_lab
 
 def render_party_and_transport_block(party_label, customer_name, customer_gst, terms_label, terms_value, right_box_title, ref_label, ref_value, created_label, created_value, transport_insurance_terms=None):
     """Customer / order-reference two-column info block, with an optional
-    full-width Transport & Insurance Terms row directly beneath it."""
+    full-width Transport & Insurance Terms row directly beneath it.
+
+    Each box's detail lines are joined with <br> inside a single <div>
+    rather than several separate <div class="party-detail"> blocks -
+    xhtml2pdf renders each block-level element as its own Paragraph with
+    extra implicit spacing, which is what caused the noticeably sparse,
+    gappy look between lines in a box with only 2-3 short lines."""
     transport_html = ""
     if transport_insurance_terms:
         transport_html = f"""
@@ -262,13 +250,17 @@ def render_party_and_transport_block(party_label, customer_name, customer_gst, t
             <td width="50%" class="party-box">
                 <div class="party-label">{party_label}</div>
                 <div class="party-name">{customer_name}</div>
-                <div class="party-detail">GSTIN: {customer_gst or 'N/A'}</div>
-                <div class="party-detail">{terms_label}: {terms_value}</div>
+                <div class="party-detail">
+                    GSTIN: {customer_gst or 'N/A'}<br>
+                    {terms_label}: {terms_value}
+                </div>
             </td>
             <td width="50%" class="party-box" style="border-left: none;">
                 <div class="party-label">{right_box_title}</div>
-                <div class="party-detail">{ref_label}: <strong>{ref_value}</strong></div>
-                <div class="party-detail">{created_label}: {created_value}</div>
+                <div class="party-detail">
+                    {ref_label}: <strong>{ref_value}</strong><br>
+                    {created_label}: {created_value}
+                </div>
             </td>
         </tr>
     </table>
@@ -276,25 +268,14 @@ def render_party_and_transport_block(party_label, customer_name, customer_gst, t
     """
 
 
-def render_bank_and_summary(subtotal, gst_rate, gst_amount, grand_total):
-    """Bank/payment details (left) alongside the subtotal/GST/total summary
-    (right), followed by the Amount in Words line - the two things every
-    professional invoice needs for someone to actually pay it."""
+def render_summary(subtotal, gst_rate, gst_amount, grand_total):
+    """Right-aligned subtotal/GST/total summary, followed by the Amount
+    in Words line."""
     return f"""
     <table class="bottom-section-table">
         <tr>
-            <td width="55%" class="bank-box">
-                <div class="bank-title">PAYMENT / BANK DETAILS</div>
-                <table>
-                    <tr><td class="bank-label">Account Name</td><td class="bank-value">{Config.BANK_ACCOUNT_NAME}</td></tr>
-                    <tr><td class="bank-label">Bank</td><td class="bank-value">{Config.BANK_NAME}</td></tr>
-                    <tr><td class="bank-label">Account Number</td><td class="bank-value">{Config.BANK_ACCOUNT_NUMBER}</td></tr>
-                    <tr><td class="bank-label">IFSC Code</td><td class="bank-value">{Config.BANK_IFSC}</td></tr>
-                    <tr><td class="bank-label">Branch</td><td class="bank-value">{Config.BANK_BRANCH}</td></tr>
-                </table>
-            </td>
-            <td width="5%"></td>
-            <td width="40%" class="summary-box">
+            <td width="55%"></td>
+            <td width="45%" class="summary-box">
                 <table class="summary-table">
                     <tr>
                         <td class="summary-label">Subtotal</td>
