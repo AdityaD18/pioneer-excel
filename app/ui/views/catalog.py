@@ -5,8 +5,8 @@ from app.services.product_service import ProductService
 from app.ui.styles import render_html, trigger_toast
 
 def render_catalog_tab():
-    render_html('<div class="section-head"><i class="fa-solid fa-boxes-stacked"></i> Master Product Catalog (Static Price List)</div>')
-    st.caption("Exact representation of STATIC PRICE LIST.xlsx with added Cost Per Pc column.")
+    render_html('<div class="section-head"><i class="fa-solid fa-boxes-stacked"></i> Master Product Catalog (STATIC PRICE LIST)</div>')
+    st.caption("Exact representation of STATIC PRICE LIST.xlsx as-is (Price in \" Per 100pcs).")
     
     col_c1, col_c2, col_c3 = st.columns(3)
     with col_c1:
@@ -27,13 +27,14 @@ def render_catalog_tab():
         return
         
     df_cat = pd.DataFrame(cat_items)
+    price_col_name = 'Price in " Per 100pcs'
     
     # Display Data Editor
     st.caption("Double-click any price cell to update rates directly inline.")
     edited_df = st.data_editor(
         df_cat,
         key="cat_data_editor",
-        disabled=["product_id", "Series", "Item Code", "Cost Per Pc (INR)"],
+        disabled=["product_id", "Series", "Item Code"],
         use_container_width=True,
         hide_index=True
     )
@@ -45,8 +46,8 @@ def render_catalog_tab():
             p_id = row['product_id']
             
             # Check price change
-            new_p100 = float(row['Price in Per 100pcs (INR)'])
-            orig_p100 = float(orig['Price in Per 100pcs (INR)'])
+            new_p100 = float(row[price_col_name])
+            orig_p100 = float(orig[price_col_name])
             if new_p100 != orig_p100:
                 ProductService.update_product_cost_price(p_id, new_p100)
                 updated_cnt += 1

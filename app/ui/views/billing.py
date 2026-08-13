@@ -115,7 +115,7 @@ def show_invoice_confirmation_modal(cust_payload, cart_items, calc_res, stock_au
             "Requested Qty": f"{item['quantity']:,.0f} PCS",
             "Available Stock": f"{audit.get('current_stock', 0.0):,.0f} PCS",
             "Stock Status": status_str,
-            "Rate / Pc (INR)": f"Rs. {item['unit_price']:,.2f}",
+            "Rate / 100 Pcs (INR)": f"Rs. {item['unit_price_100']:,.2f}",
             "Discount %": f"{item['discount_percentage']:.1f}%",
             "Line Total (INR)": f"Rs. {item['line_total']:,.2f}"
         })
@@ -171,7 +171,7 @@ def show_quotation_confirmation_modal(cust_payload, cart_items, calc_res, stock_
             "Requested Qty": f"{item['quantity']:,.0f} PCS",
             "Available Stock": f"{audit.get('current_stock', 0.0):,.0f} PCS",
             "Stock Status": status_str,
-            "Rate / Pc (INR)": f"Rs. {item['unit_price']:,.2f}",
+            "Rate / 100 Pcs (INR)": f"Rs. {item['unit_price_100']:,.2f}",
             "Discount %": f"{item['discount_percentage']:.1f}%",
             "Line Total (INR)": f"Rs. {item['line_total']:,.2f}"
         })
