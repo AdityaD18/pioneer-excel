@@ -22,6 +22,6 @@ def render_stock_status_tab():
     
     st.dataframe(
         df_stock,
-        use_container_width=True,
+        width='stretch',
         hide_index=True
     )

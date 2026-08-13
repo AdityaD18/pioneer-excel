@@ -12,7 +12,7 @@ def render_customers_tab():
         c_search = st.text_input("🔍 Search Customer Name or GSTIN", key="cust_dir_search")
     with col_cu2:
         st.markdown("<br>", unsafe_allow_html=True)
-        show_add = st.button("➕ Add New Customer", use_container_width=True, type="primary")
+        show_add = st.button("➕ Add New Customer", width='stretch', type="primary")
 
     if show_add:
         with st.expander("📝 Create New Customer Profile", expanded=True):
@@ -51,4 +51,4 @@ def render_customers_tab():
             "Updated At": c['updated_at'][:10]
         })
 
-    st.dataframe(pd.DataFrame(df_cust), use_container_width=True, hide_index=True)
+    st.dataframe(pd.DataFrame(df_cust), width='stretch', hide_index=True)

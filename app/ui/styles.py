@@ -1,198 +1,374 @@
 import streamlit as st
 
 def inject_custom_css():
-    """Injects ultra-premium, modern CSS styling with dark glassmorphic themes, glowing gradients, and fluid micro-animations."""
+    """Injects the Pioneer Technology design system: a clean, professional
+    steel-navy and copper palette built for a mechanical parts ERP, applied
+    consistently across every native Streamlit widget and custom component."""
     st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
     @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
-    
-    html, body, [class*="css"] {
-        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-    }
-    
-    /* Main Header Gradient Banner */
-    .header-banner {
-        background: linear-gradient(135deg, #0F172A 0%, #1E1B4B 50%, #0F172A 100%);
-        padding: 26px 30px;
-        border-radius: 16px;
-        color: #F8FAFC;
-        margin-bottom: 24px;
-        border: 1px solid rgba(99, 102, 241, 0.25);
-        box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.4), 0 0 20px rgba(99, 102, 241, 0.15);
-        position: relative;
-        overflow: hidden;
+
+    :root {
+        /* Palette: steel-navy + copper, grounded in mechanical/industrial parts */
+        --pt-navy-900: #0F1E33;
+        --pt-navy-800: #16304F;
+        --pt-navy-700: #1E3F66;
+        --pt-navy-600: #2C5282;
+        --pt-copper-600: #B5622D;
+        --pt-copper-500: #C2703D;
+        --pt-copper-100: #FBEEE4;
+        --pt-success: #157347;
+        --pt-success-bg: #E7F5EC;
+        --pt-warning: #B45309;
+        --pt-warning-bg: #FEF3E2;
+        --pt-danger: #B91C1C;
+        --pt-danger-bg: #FDEDED;
+        --pt-info: #0369A1;
+        --pt-info-bg: #E8F4FB;
+
+        --pt-bg: #F4F6F9;
+        --pt-surface: #FFFFFF;
+        --pt-border: #E2E8F0;
+        --pt-border-strong: #CBD5E1;
+
+        --pt-text-primary: #101828;
+        --pt-text-secondary: #5B6472;
+        --pt-text-muted: #8D97A5;
+
+        --pt-radius-sm: 8px;
+        --pt-radius-md: 10px;
+        --pt-radius-lg: 14px;
+        --pt-shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.05);
+        --pt-shadow-md: 0 4px 10px -2px rgba(16, 24, 40, 0.08), 0 2px 4px -2px rgba(16, 24, 40, 0.04);
     }
 
-    .header-banner::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        left: -50%;
-        width: 200%;
-        height: 200%;
-        background: radial-gradient(circle, rgba(56, 189, 248, 0.1) 0%, transparent 60%);
-        pointer-events: none;
+    @media (prefers-reduced-motion: reduce) {
+        * { transition: none !important; animation: none !important; }
     }
-    
+
+    html, body, [class*="css"] {
+        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        color: var(--pt-text-primary);
+    }
+
+    /* ---------- App shell ---------- */
+    .stApp {
+        background: var(--pt-bg);
+    }
+
+    div.block-container {
+        padding-top: 1.6rem;
+        padding-bottom: 3rem;
+        max-width: 1400px;
+    }
+
+    /* Hide default Streamlit chrome for a clean, custom-branded surface */
+    #MainMenu, footer, [data-testid="stToolbar"] { visibility: hidden; height: 0; }
+
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--pt-border-strong); border-radius: 8px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+
+    /* ---------- Header banner ---------- */
+    .header-banner {
+        background: linear-gradient(120deg, var(--pt-navy-900) 0%, var(--pt-navy-700) 100%);
+        padding: 24px 30px;
+        border-radius: var(--pt-radius-lg);
+        color: #F8FAFC;
+        margin-bottom: 22px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        box-shadow: var(--pt-shadow-md);
+        position: relative;
+        border-left: 4px solid var(--pt-copper-500);
+    }
+
     .header-title {
-        font-size: 28px;
-        font-weight: 800;
+        font-size: 24px;
+        font-weight: 700;
         margin: 0;
-        background: linear-gradient(90deg, #38BDF8 0%, #818CF8 50%, #C084FC 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        color: #F8FAFC;
         display: flex;
         align-items: center;
-        gap: 14px;
-        letter-spacing: -0.5px;
+        gap: 12px;
+        letter-spacing: -0.2px;
     }
-    
+
+    .header-title i { color: var(--pt-copper-500); font-size: 20px; }
+
     .header-subtitle {
-        font-size: 14px;
-        color: #94A3B8;
-        margin-top: 6px;
+        font-size: 13.5px;
+        color: #AEBAC9;
+        margin-top: 5px;
         font-weight: 400;
     }
-    
-    /* Futuristic Metric Cards */
+
+    /* ---------- Metric cards (custom) ---------- */
     .metric-card {
-        background: linear-gradient(145deg, #FFFFFF 0%, #F8FAFC 100%);
-        border: 1px solid #E2E8F0;
-        border-radius: 14px;
-        padding: 20px 22px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .metric-card::top-bar {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 3px;
+        background: var(--pt-surface);
+        border: 1px solid var(--pt-border);
+        border-radius: var(--pt-radius-md);
+        padding: 18px 20px;
+        box-shadow: var(--pt-shadow-sm);
+        transition: box-shadow 0.15s ease, border-color 0.15s ease;
     }
 
     .metric-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 12px 24px -8px rgba(99, 102, 241, 0.15), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        border-color: #C7D2FE;
+        box-shadow: var(--pt-shadow-md);
+        border-color: var(--pt-border-strong);
     }
-    
+
     .metric-title {
-        font-size: 12px;
+        font-size: 11.5px;
         font-weight: 700;
-        color: #64748B;
+        color: var(--pt-text-secondary);
         text-transform: uppercase;
-        letter-spacing: 0.8px;
+        letter-spacing: 0.6px;
         display: flex;
         align-items: center;
         justify-content: space-between;
     }
-    
+
     .metric-value {
-        font-size: 26px;
-        font-weight: 800;
-        color: #0F172A;
-        margin: 10px 0 4px 0;
-        letter-spacing: -0.5px;
-        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--pt-text-primary);
+        margin: 8px 0 3px 0;
+        letter-spacing: -0.3px;
+        font-family: 'JetBrains Mono', 'Plus Jakarta Sans', monospace;
     }
-    
+
     .metric-sub {
         font-size: 12px;
         font-weight: 500;
-        color: #94A3B8;
+        color: var(--pt-text-muted);
     }
-    
-    /* Styled Metric Icons */
-    .metric-icon-blue { color: #0284C7; background: #E0F2FE; padding: 10px; border-radius: 10px; font-size: 16px; }
-    .metric-icon-green { color: #16A34A; background: #DCFCE7; padding: 10px; border-radius: 10px; font-size: 16px; }
-    .metric-icon-amber { color: #D97706; background: #FEF3C7; padding: 10px; border-radius: 10px; font-size: 16px; }
-    .metric-icon-purple { color: #9333EA; background: #F3E8FF; padding: 10px; border-radius: 10px; font-size: 16px; }
-    .metric-icon-cyan { color: #0891B2; background: #CFFAFE; padding: 10px; border-radius: 10px; font-size: 16px; }
-    .metric-icon-red { color: #DC2626; background: #FEE2E2; padding: 10px; border-radius: 10px; font-size: 16px; }
 
-    /* Section Headers */
+    .metric-icon-blue { color: var(--pt-info); background: var(--pt-info-bg); padding: 9px; border-radius: var(--pt-radius-sm); font-size: 14px; }
+    .metric-icon-green { color: var(--pt-success); background: var(--pt-success-bg); padding: 9px; border-radius: var(--pt-radius-sm); font-size: 14px; }
+    .metric-icon-amber { color: var(--pt-warning); background: var(--pt-warning-bg); padding: 9px; border-radius: var(--pt-radius-sm); font-size: 14px; }
+    .metric-icon-purple { color: var(--pt-navy-700); background: #E9EEF5; padding: 9px; border-radius: var(--pt-radius-sm); font-size: 14px; }
+    .metric-icon-cyan { color: var(--pt-info); background: var(--pt-info-bg); padding: 9px; border-radius: var(--pt-radius-sm); font-size: 14px; }
+    .metric-icon-red { color: var(--pt-danger); background: var(--pt-danger-bg); padding: 9px; border-radius: var(--pt-radius-sm); font-size: 14px; }
+
+    /* Native st.metric widget, styled to match the custom cards */
+    div[data-testid="stMetric"] {
+        background: var(--pt-surface);
+        border: 1px solid var(--pt-border);
+        border-radius: var(--pt-radius-md);
+        padding: 14px 18px;
+        box-shadow: var(--pt-shadow-sm);
+    }
+    div[data-testid="stMetricLabel"] {
+        font-size: 11.5px;
+        font-weight: 700;
+        color: var(--pt-text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    div[data-testid="stMetricValue"] {
+        font-family: 'JetBrains Mono', 'Plus Jakarta Sans', monospace;
+        color: var(--pt-text-primary);
+        font-weight: 700;
+    }
+
+    /* ---------- Section headers ---------- */
     .section-head {
-        font-size: 20px;
-        font-weight: 800;
-        color: #0F172A;
-        margin-bottom: 14px;
+        font-size: 19px;
+        font-weight: 700;
+        color: var(--pt-text-primary);
+        margin-bottom: 4px;
         display: flex;
         align-items: center;
         gap: 10px;
-        letter-spacing: -0.3px;
+        letter-spacing: -0.2px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--pt-border);
     }
-    
-    /* Styled Containers & Cards */
+    .section-head i { color: var(--pt-copper-600); font-size: 17px; }
+
+    div[data-testid="stCaptionContainer"] { color: var(--pt-text-secondary); margin-bottom: 14px; }
+
+    /* ---------- Setting / grouped panels ---------- */
     .setting-section {
-        background: #F8FAFC;
-        border: 1px solid #E2E8F0;
-        border-radius: 12px;
-        padding: 16px 18px;
-        margin-bottom: 16px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        background: var(--pt-surface);
+        border: 1px solid var(--pt-border);
+        border-left: 3px solid var(--pt-navy-700);
+        border-radius: var(--pt-radius-md);
+        padding: 14px 18px;
+        margin-bottom: 14px;
+        box-shadow: var(--pt-shadow-sm);
     }
-    
+
     .setting-section-title {
-        font-size: 15px;
+        font-size: 14.5px;
         font-weight: 700;
-        color: #1E293B;
-        margin-bottom: 8px;
+        color: var(--pt-text-primary);
+        margin-bottom: 0;
         display: flex;
         align-items: center;
         gap: 8px;
     }
+    .setting-section-title i { color: var(--pt-navy-700); }
 
-    /* Table & Data Editor Enhancements */
-    div[data-testid="stDataFrame"] {
-        border-radius: 12px;
-        overflow: hidden;
-        border: 1px solid #CBD5E1;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+    /* ---------- Tabs ---------- */
+    /* Verified against the installed Streamlit frontend bundle: tabs use
+       data-testid="stTabs" / "stTab" with role="tablist" / role="tab",
+       and react-aria-components marks the active tab with data-selected
+       (aria-selected is also present, kept as a fallback). */
+    div[data-testid="stTabs"] [role="tablist"] {
+        gap: 4px;
+        background: var(--pt-surface);
+        padding: 6px;
+        border-radius: var(--pt-radius-md);
+        border: 1px solid var(--pt-border);
+        box-shadow: var(--pt-shadow-sm);
+        margin-bottom: 20px;
     }
 
-    /* Styled Buttons */
+    div[data-testid="stTab"] {
+        height: 42px;
+        border-radius: var(--pt-radius-sm);
+        color: var(--pt-text-secondary);
+        font-weight: 600;
+        font-size: 13.5px;
+        padding: 0 16px;
+        transition: background 0.15s ease, color 0.15s ease;
+    }
+
+    div[data-testid="stTab"]:hover {
+        background: var(--pt-bg);
+        color: var(--pt-text-primary);
+    }
+
+    div[data-testid="stTab"][data-selected],
+    div[data-testid="stTab"][aria-selected="true"] {
+        background: var(--pt-navy-900) !important;
+        color: #FFFFFF !important;
+    }
+
+    div[data-testid="stTab"][data-selected] p,
+    div[data-testid="stTab"][aria-selected="true"] p {
+        color: #FFFFFF !important;
+    }
+
+    /* ---------- Buttons ---------- */
+    div.stButton > button {
+        border-radius: var(--pt-radius-sm);
+        font-weight: 600;
+        font-size: 13.5px;
+        padding: 9px 18px;
+        border: 1px solid var(--pt-border-strong);
+        color: var(--pt-text-primary);
+        background: var(--pt-surface);
+        transition: all 0.15s ease;
+    }
+
+    div.stButton > button:hover {
+        border-color: var(--pt-navy-600);
+        color: var(--pt-navy-700);
+        background: #F8FAFC;
+    }
+
     div.stButton > button[kind="primary"] {
-        background: linear-gradient(135deg, #4F46E5 0%, #3B82F6 100%);
-        border: none;
+        background: var(--pt-navy-800);
+        border: 1px solid var(--pt-navy-800);
         color: #FFFFFF;
-        font-weight: 700;
-        border-radius: 10px;
-        padding: 10px 20px;
-        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
-        transition: all 0.2s ease;
+        box-shadow: var(--pt-shadow-sm);
     }
 
     div.stButton > button[kind="primary"]:hover {
-        background: linear-gradient(135deg, #4338CA 0%, #2563EB 100%);
-        box-shadow: 0 6px 16px rgba(79, 70, 229, 0.35);
-        transform: translateY(-1px);
+        background: var(--pt-navy-900);
+        border-color: var(--pt-navy-900);
+        box-shadow: var(--pt-shadow-md);
     }
 
-    /* Badge Pills */
+    div.stDownloadButton > button {
+        border-radius: var(--pt-radius-sm);
+        font-weight: 600;
+        background: var(--pt-copper-500);
+        border: 1px solid var(--pt-copper-600);
+        color: #FFFFFF;
+    }
+    div.stDownloadButton > button:hover {
+        background: var(--pt-copper-600);
+    }
+
+    /* ---------- Inputs ---------- */
+    .stTextInput input, .stNumberInput input, .stDateInput input,
+    .stTextArea textarea, div[data-baseweb="select"] > div {
+        border-radius: var(--pt-radius-sm) !important;
+        border: 1px solid var(--pt-border-strong) !important;
+        font-size: 13.5px;
+    }
+
+    .stTextInput input:focus, .stNumberInput input:focus, .stDateInput input:focus,
+    .stTextArea textarea:focus {
+        border-color: var(--pt-navy-600) !important;
+        box-shadow: 0 0 0 3px rgba(44, 82, 130, 0.12) !important;
+    }
+
+    div[data-testid="stWidgetLabel"] {
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        color: var(--pt-text-secondary) !important;
+    }
+
+    /* ---------- Expanders ---------- */
+    /* stExpander is a fully custom React component (no native
+       <details>/<summary>), so style the label text directly. */
+    div[data-testid="stExpander"] {
+        border: 1px solid var(--pt-border);
+        border-radius: var(--pt-radius-md);
+        box-shadow: var(--pt-shadow-sm);
+        background: var(--pt-surface);
+        overflow: hidden;
+    }
+    div[data-testid="stExpander"] p {
+        font-weight: 600;
+        font-size: 13.5px;
+        color: var(--pt-text-primary);
+    }
+
+    /* ---------- Table & Data Editor ---------- */
+    /* st.dataframe and st.data_editor both render through the same
+       DataFrame component and share the stDataFrame testid. */
+    div[data-testid="stDataFrame"] {
+        border-radius: var(--pt-radius-md);
+        overflow: hidden;
+        border: 1px solid var(--pt-border);
+        box-shadow: var(--pt-shadow-sm);
+    }
+
+    /* ---------- Alerts ---------- */
+    div[data-testid="stAlertContentInfo"] { color: var(--pt-info); }
+    div[data-testid="stAlertContentSuccess"] { color: var(--pt-success); }
+    div[data-testid="stAlertContentError"] { color: var(--pt-danger); }
+    div[data-testid="stAlertContentWarning"] { color: var(--pt-warning); }
+
+    /* ---------- Badge pills ---------- */
     .custom-badge {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        padding: 4px 10px;
+        padding: 4px 11px;
         border-radius: 20px;
         font-size: 12px;
         font-weight: 600;
-        background: #F1F5F9;
-        color: #475569;
-        border: 1px solid #E2E8F0;
+        background: var(--pt-bg);
+        color: var(--pt-text-secondary);
+        border: 1px solid var(--pt-border);
     }
 
     .custom-badge-active {
-        background: #ECFDF5;
-        color: #047857;
-        border-color: #A7F3D0;
+        background: var(--pt-success-bg);
+        color: var(--pt-success);
+        border-color: #BEE3C9;
     }
+
+    /* ---------- Dividers ---------- */
+    hr { border-color: var(--pt-border); }
     </style>
     """, unsafe_allow_html=True)
 

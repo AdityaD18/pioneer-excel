@@ -41,7 +41,7 @@ def render_settings_tab():
         
     c_btn1, c_btn2 = st.columns(2)
     with c_btn1:
-        if st.button("💾 Save Settings", use_container_width=True):
+        if st.button("💾 Save Settings", width='stretch'):
             st.session_state.google_sheets_url = gs_url_input
             st.session_state.safety_stock_buffer = safety_buf_input
             Config.GOOGLE_SHEETS_STOCK_URL = gs_url_input
@@ -49,7 +49,7 @@ def render_settings_tab():
             trigger_toast("Saved Google Sheets & Safety Buffer configuration!", icon="⚙️")
             st.rerun()
     with c_btn2:
-        if st.button("⚡ Sync Live Stock From Google Sheets Now", use_container_width=True, type="primary"):
+        if st.button("⚡ Sync Live Stock From Google Sheets Now", width='stretch', type="primary"):
             target_url = gs_url_input or st.session_state.google_sheets_url
             if not target_url:
                 st.error("Please enter a valid Google Sheets URL first.")
@@ -75,7 +75,7 @@ def render_settings_tab():
         new_gst_val = st.number_input("Default GST Rate (%)", min_value=0.0, max_value=50.0, value=gst_val, step=0.5, key="set_gst_rate")
     with c_set2:
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("💾 Update GST Rate", use_container_width=True):
+        if st.button("💾 Update GST Rate", width='stretch'):
             OrderService.update_gst_rate(new_gst_val)
             trigger_toast(f"GST Rate updated to {new_gst_val}%!", icon="⚙️")
             st.rerun()
@@ -90,7 +90,7 @@ def render_settings_tab():
         st.markdown("##### 💵 Static Price List (`STATIC PRICE LIST.xlsx`)")
         st.caption("Upload static price list to update product cost price rates per 100 Pcs.")
         up_cost = st.file_uploader("Choose Price List Excel File", type=["xlsx", "xls"], key="file_up_cost")
-        if up_cost and st.button("🚀 Process Price List Import", type="primary", key="btn_imp_cost", use_container_width=True):
+        if up_cost and st.button("🚀 Process Price List Import", type="primary", key="btn_imp_cost", width='stretch'):
             with st.spinner("Parsing static price list sheet..."):
                 res = provider.import_costs(up_cost, filename=up_cost.name, imported_by="Streamlit Admin")
                 if res['status'] in ('success', 'partial_success'):
@@ -103,7 +103,7 @@ def render_settings_tab():
         st.markdown("##### 📦 Dynamic Stock Status (`STOCK STATUS.xlsx`)")
         st.caption("Upload dynamic stock status sheet to update live available stock levels.")
         up_stock = st.file_uploader("Choose Stock Status Excel File", type=["xlsx", "xls"], key="file_up_stock")
-        if up_stock and st.button("🚀 Process Stock Status Import", type="primary", key="btn_imp_stock", use_container_width=True):
+        if up_stock and st.button("🚀 Process Stock Status Import", type="primary", key="btn_imp_stock", width='stretch'):
             with st.spinner("Parsing dynamic stock status sheet..."):
                 res = provider.import_inventory(up_stock, filename=up_stock.name, imported_by="Streamlit Admin")
                 if res['status'] in ('success', 'partial_success'):
@@ -115,7 +115,7 @@ def render_settings_tab():
     st.markdown("<br>", unsafe_allow_html=True)
     render_html('<div class="setting-section"><div class="setting-section-title"><i class="fa-solid fa-arrows-rotate"></i> Reseed & Update Catalog</div></div>')
     st.caption("Re-import all cost price rates and inventory stock levels cleanly from `STATIC PRICE LIST.xlsx` and `STOCK STATUS.xlsx`.")
-    if st.button("🔄 Force Reseed & Update Catalog from Excel", key="btn_reseed_db", type="secondary", use_container_width=True):
+    if st.button("🔄 Force Reseed & Update Catalog from Excel", key="btn_reseed_db", type="secondary", width='stretch'):
         with st.spinner("Clearing stale rows and re-importing fresh costs and stock..."):
             from app.models.database import reseed_database_from_excel
             ok = reseed_database_from_excel()

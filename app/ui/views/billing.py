@@ -120,7 +120,7 @@ def show_invoice_confirmation_modal(cust_payload, cart_items, calc_res, stock_au
             "Line Total (INR)": f"Rs. {item['line_total']:,.2f}"
         })
         
-    st.dataframe(pd.DataFrame(df_preview), use_container_width=True, hide_index=True)
+    st.dataframe(pd.DataFrame(df_preview), width='stretch', hide_index=True)
     
     st.markdown("---")
     col_m1, col_m2, col_m3 = st.columns(3)
@@ -135,7 +135,7 @@ def show_invoice_confirmation_modal(cust_payload, cart_items, calc_res, stock_au
         st.warning("⚠️ **Notice**: One or more products have stock shortfalls. Tax Invoice creation will proceed as requested.")
 
     st.markdown("<br>", unsafe_allow_html=True)
-    if st.button("🚀 Confirm & Generate Tax Invoice PDF", type="primary", use_container_width=True):
+    if st.button("🚀 Confirm & Generate Tax Invoice PDF", type="primary", width='stretch'):
         o_id = OrderService.create_order(cust_payload, cart_items)
         inv_id = InvoiceService.generate_invoice_for_order(o_id)
         inv_data = InvoiceService.get_invoice_by_id(inv_id)
@@ -176,7 +176,7 @@ def show_quotation_confirmation_modal(cust_payload, cart_items, calc_res, stock_
             "Line Total (INR)": f"Rs. {item['line_total']:,.2f}"
         })
         
-    st.dataframe(pd.DataFrame(df_preview), use_container_width=True, hide_index=True)
+    st.dataframe(pd.DataFrame(df_preview), width='stretch', hide_index=True)
     
     st.markdown("---")
     col_m1, col_m2, col_m3 = st.columns(3)
@@ -191,7 +191,7 @@ def show_quotation_confirmation_modal(cust_payload, cart_items, calc_res, stock_
         st.info("ℹ️ **Notice**: Commercial Quotation creation will proceed with current stock status indicators.")
 
     st.markdown("<br>", unsafe_allow_html=True)
-    if st.button("🚀 Confirm & Generate Commercial Quotation PDF", type="primary", use_container_width=True):
+    if st.button("🚀 Confirm & Generate Commercial Quotation PDF", type="primary", width='stretch'):
         q_id = QuotationService.generate_quotation(cust_payload, cart_items)
         q_data = QuotationService.get_quotation_by_id(q_id)
         q_html = generate_quotation_html(q_data)
@@ -254,7 +254,7 @@ def render_billing_builder(mode="invoice"):
             file_name=f"{doc_num}.pdf",
             mime="application/pdf",
             type="primary",
-            use_container_width=True,
+            width='stretch',
             key=f"dl_btn_{mode}_{doc_num}"
         )
         
@@ -347,14 +347,14 @@ def render_billing_builder(mode="invoice"):
                 "Quantity (PCS)": st.column_config.NumberColumn(min_value=1.0, step=10.0)
             },
             num_rows="dynamic",
-            use_container_width=True,
+            width='stretch',
             hide_index=True,
             key=grid_key
         )
         
         col_gbtn1, col_gbtn2 = st.columns(2)
         with col_gbtn1:
-            if st.button("📋 Add Grid Entries to Order", key=f"{mode}_btn_add_grid", use_container_width=True, type="secondary"):
+            if st.button("📋 Add Grid Entries to Order", key=f"{mode}_btn_add_grid", width='stretch', type="secondary"):
                 grid_added = 0
                 
                 for idx, row in edited_paste_grid.iterrows():
@@ -379,7 +379,7 @@ def render_billing_builder(mode="invoice"):
                 else:
                     st.warning("No matching part numbers found in filled table rows.")
         with col_gbtn2:
-            if st.button("🗑️ Clear Input Grid", key=f"{mode}_btn_clear_grid", use_container_width=True):
+            if st.button("🗑️ Clear Input Grid", key=f"{mode}_btn_clear_grid", width='stretch'):
                 st.session_state[ver_key] += 1
                 trigger_toast("Cleared input grid table!", icon="🗑️")
                 st.rerun()
@@ -391,7 +391,7 @@ def render_billing_builder(mode="invoice"):
                 key=f"{mode}_paste_area",
                 height=80
             )
-            if st.button("📥 Import Pasted Text Rows", key=f"{mode}_btn_paste_text", use_container_width=True):
+            if st.button("📥 Import Pasted Text Rows", key=f"{mode}_btn_paste_text", width='stretch'):
                 parsed_items, unrec = parse_pasted_products_text(paste_text, all_prods, default_discount=disc_val)
                 if parsed_items:
                     st.session_state[session_key].extend(parsed_items)
@@ -411,7 +411,7 @@ def render_billing_builder(mode="invoice"):
         p_qty = st.number_input("Qty (PCS)", min_value=1.0, value=100.0, step=10.0, key=f"{mode}_add_qty")
             
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("➕ Add Single Item", use_container_width=True, type="primary", key=f"{mode}_btn_add"):
+        if st.button("➕ Add Single Item", width='stretch', type="primary", key=f"{mode}_btn_add"):
             if p_sel != "-- Select Product --":
                 prod_obj = prod_map[p_sel]
                 st.session_state[session_key].append({
@@ -435,7 +435,7 @@ def render_billing_builder(mode="invoice"):
     with col_oh1:
         st.markdown("#### 🛒 Current Order Line Items Table")
     with col_oh2:
-        if st.button("🗑️ Clear All Order Items", key=f"{mode}_btn_clear_order", use_container_width=True):
+        if st.button("🗑️ Clear All Order Items", key=f"{mode}_btn_clear_order", width='stretch'):
             st.session_state[session_key] = []
             trigger_toast("Cleared all order items!", icon="🗑️")
             st.rerun()
@@ -476,7 +476,7 @@ def render_billing_builder(mode="invoice"):
             "Discount %": st.column_config.NumberColumn(min_value=0.0, max_value=100.0, step=0.5),
             "Rate / 100 Pcs (INR)": st.column_config.NumberColumn(disabled=True)
         },
-        use_container_width=True,
+        width='stretch',
         hide_index=True,
         key=f"{mode}_order_data_editor"
     )
@@ -512,7 +512,7 @@ def render_billing_builder(mode="invoice"):
         draw_metric_card("Grand Total", f"Rs. {calc_res['grand_total']:,.2f}", "Final Payable", "fa-solid fa-money-bill-wave", "green")
     with col_s4:
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("🗑️ Clear Billing List", use_container_width=True, key=f"{mode}_btn_clear"):
+        if st.button("🗑️ Clear Billing List", width='stretch', key=f"{mode}_btn_clear"):
             st.session_state[session_key] = []
             st.rerun()
 
@@ -520,10 +520,10 @@ def render_billing_builder(mode="invoice"):
     
     # 5. Open Large Confirmation Modal Dialog Button with Stock Audit Review
     if mode == "invoice":
-        if st.button("📜 Proceed to Review & Generate Tax Invoice (INV)", use_container_width=True, type="primary"):
+        if st.button("📜 Proceed to Review & Generate Tax Invoice (INV)", width='stretch', type="primary"):
             show_invoice_confirmation_modal(cust_payload, cart_items, calc_res, stock_audit)
     else:
-        if st.button("📄 Proceed to Review & Generate Commercial Quotation (QTN)", use_container_width=True, type="primary"):
+        if st.button("📄 Proceed to Review & Generate Commercial Quotation (QTN)", width='stretch', type="primary"):
             show_quotation_confirmation_modal(cust_payload, cart_items, calc_res, stock_audit)
 
 def render_tax_invoice_tab():

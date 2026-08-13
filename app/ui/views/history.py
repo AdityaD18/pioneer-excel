@@ -29,7 +29,7 @@ def render_history_tab():
                     "Grand Total": f"Rs. {i['grand_total']:,.2f}",
                     "Created At": i['created_at'][:19]
                 })
-            st.dataframe(pd.DataFrame(df_inv), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(df_inv), width='stretch', hide_index=True)
             
             # PDF Download selector & Preview
             inv_nums = [i['invoice_number'] for i in invoices]
@@ -47,7 +47,7 @@ def render_history_tab():
                         file_name=f"{sel_inv_num}.pdf",
                         mime="application/pdf",
                         type="primary",
-                        use_container_width=True
+                        width='stretch'
                     )
                 
                 b64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
@@ -71,7 +71,7 @@ def render_history_tab():
                     "Grand Total": f"Rs. {q['grand_total']:,.2f}",
                     "Created At": q['created_at'][:19]
                 })
-            st.dataframe(pd.DataFrame(df_qtn), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(df_qtn), width='stretch', hide_index=True)
             
             # PDF Download selector & Preview
             qtn_nums = [q['quotation_number'] for q in quotations]
@@ -89,7 +89,7 @@ def render_history_tab():
                         file_name=f"{sel_qtn_num}.pdf",
                         mime="application/pdf",
                         type="primary",
-                        use_container_width=True
+                        width='stretch'
                     )
                 
                 b64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')

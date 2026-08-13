@@ -17,7 +17,7 @@ def render_catalog_tab():
         sel_series = st.selectbox("🏷️ Filter by Series", series_opts, key="cat_series_filter")
     with col_c3:
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("🔄 Clear Filter / Refresh Grid", use_container_width=True):
+        if st.button("🔄 Clear Filter / Refresh Grid", width='stretch'):
             st.rerun()
 
     # Retrieve Catalog Rows matching STATIC PRICE LIST structure
@@ -51,7 +51,7 @@ def render_catalog_tab():
             )
         },
         key="cat_data_editor",
-        use_container_width=True,
+        width='stretch',
         hide_index=True
     )
     
