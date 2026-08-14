@@ -16,6 +16,7 @@ class ProductRepository(BaseRepository):
                 p.id as product_id,
                 p.series as "Series",
                 p.part_number as "Item Code",
+                p.part_name as "Description",
                 COALESCE(c.price_per_100_pcs, 0.0) as 'Price in " Per 100pcs',
                 COALESCE(c.price_per_unit, 0.0) as 'Price per Piece',
                 COALESCE(p.packing_quantity_text, CAST(p.packing_quantity AS TEXT), '1') as "Packing Quantity PCS"
@@ -25,8 +26,8 @@ class ProductRepository(BaseRepository):
         """
         params = []
         if search_kw:
-            sql += " AND (p.part_number LIKE ? OR p.series LIKE ?)"
-            params.extend([f"%{search_kw}%", f"%{search_kw}%"])
+            sql += " AND (p.part_number LIKE ? OR p.series LIKE ? OR p.part_name LIKE ?)"
+            params.extend([f"%{search_kw}%", f"%{search_kw}%", f"%{search_kw}%"])
         if series and series != "All Series":
             sql += " AND p.series = ?"
             params.append(series)
@@ -82,6 +83,13 @@ class ProductRepository(BaseRepository):
         cls.execute(
             "UPDATE PRODUCTS SET packing_quantity = ?, series = ? WHERE id = ?",
             (packing_quantity, series, product_id)
+        )
+
+    @classmethod
+    def update_description(cls, product_id, part_name):
+        cls.execute(
+            "UPDATE PRODUCTS SET part_name = ? WHERE id = ?",
+            (part_name, product_id)
         )
 
     @classmethod

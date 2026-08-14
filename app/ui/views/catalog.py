@@ -28,17 +28,19 @@ def render_catalog_tab():
         
     df_cat = pd.DataFrame(cat_items)
     df_cat["Packing Quantity PCS"] = df_cat["Packing Quantity PCS"].astype(str)
+    df_cat["Description"] = df_cat["Description"].fillna("")
     price_col_name = 'Price in " Per 100pcs'
     per_piece_col_name = 'Price per Piece'
     
     # Display Data Editor
-    st.caption("Double-click any price cell to update rates directly inline. \"Price per Piece\" is auto-calculated from \"Price in \\\" Per 100pcs\" and cannot be edited directly.")
+    st.caption("Double-click any price or description cell to update inline. \"Price per Piece\" is auto-calculated from \"Price in \\\" Per 100pcs\" and cannot be edited directly.")
     edited_df = st.data_editor(
         df_cat,
         column_config={
             "product_id": None,
             "Series": st.column_config.TextColumn(disabled=True),
             "Item Code": st.column_config.TextColumn(disabled=True),
+            "Description": st.column_config.TextColumn(),
             "Packing Quantity PCS": st.column_config.TextColumn(),
             price_col_name: st.column_config.NumberColumn(
                 label='Price in " Per 100pcs (₹)',
@@ -73,6 +75,13 @@ def render_catalog_tab():
             orig_pack = int(orig['Packing Quantity PCS'])
             if new_pack != orig_pack:
                 ProductRepository.update_packing_and_series(p_id, new_pack, str(row['Series']))
+                updated_cnt += 1
+
+            # Check description change
+            new_desc = str(row['Description'] or '').strip()
+            orig_desc = str(orig['Description'] or '').strip()
+            if new_desc != orig_desc:
+                ProductRepository.update_description(p_id, new_desc)
                 updated_cnt += 1
                 
         if updated_cnt > 0:

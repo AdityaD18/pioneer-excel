@@ -7,6 +7,7 @@ from app.repositories.base_repository import BaseRepository
 from app.repositories.import_log_repository import ImportLogRepository
 from app.services.inventory_service import InventoryService
 from app.services.excel_header_detector import ExcelHeaderDetector
+from app.services.part_number_parser import split_part_number_and_description
 from app.core.config import Config
 from app.core.logger import import_logger
 from app.core.constants import (
@@ -130,9 +131,21 @@ class ImportService:
                 raw_item_code = raw_item_code[:-2]
             if not raw_item_code or raw_item_code.lower() == 'nan' or raw_item_code.lower() == 'total':
                 continue
-                
-            clean_item_code = raw_item_code.strip()
-            norm_code = cls.normalize_part_number(raw_item_code)
+
+            # Some stock status sheets put the part number and a free-text
+            # description together in the same cell (e.g. "209-504 Push-in
+            # terminal block, 2-conductor"). Matching against PRODUCTS on
+            # the *whole* combined string never finds the real product (it
+            # only ever exists as the clean part number "209-504"), so every
+            # row silently created a brand new duplicate "product" instead
+            # of updating the real one's stock - which is why stock updates
+            # looked like they were doing nothing. Split it first, use just
+            # the part number for matching, and carry the extracted
+            # description through to populate/refresh the product's name.
+            clean_item_code, extracted_description = split_part_number_and_description(raw_item_code)
+            if not clean_item_code:
+                continue
+            norm_code = cls.normalize_part_number(clean_item_code)
             
             savepoint_name = f"sp_inv_{idx}"
             try:
@@ -160,12 +173,21 @@ class ImportService:
                 product_id = norm_prod_cache.get(norm_code)
                 if product_id is None:
                     series = clean_item_code.split('-')[0] if '-' in clean_item_code else None
+                    part_name = extracted_description or clean_item_code
                     cur.execute(
                         "INSERT INTO PRODUCTS (part_number, part_name, series, make) VALUES (?, ?, ?, ?)",
-                        (clean_item_code, clean_item_code, series, Config.DEFAULT_MAKE)
+                        (clean_item_code, part_name, series, Config.DEFAULT_MAKE)
                     )
                     product_id = cur.lastrowid
                     norm_prod_cache[norm_code] = product_id
+                elif extracted_description:
+                    # Product already exists - refresh its description from
+                    # this sheet since that's the whole point of splitting
+                    # it out (the user's source of truth for descriptions).
+                    cur.execute(
+                        "UPDATE PRODUCTS SET part_name = ? WHERE id = ?",
+                        (extracted_description, product_id)
+                    )
                 
                 # 2. Upsert inventory record
                 cur.execute("SELECT id FROM INVENTORY WHERE product_id = ?", (product_id,))
@@ -355,10 +377,14 @@ class ImportService:
                 raw_item_code = raw_item_code[:-2]
             if not raw_item_code or raw_item_code.lower() == 'nan' or raw_item_code.lower() == 'total':
                 continue
-                
-            clean_item_code = raw_item_code.strip()
-            norm_code = cls.normalize_part_number(raw_item_code)
-                
+
+            # Same combined "part number + description" cell issue as
+            # import_inventory - split before matching so this doesn't
+            # spawn duplicate products if a price sheet ever has this too.
+            clean_item_code, extracted_description = split_part_number_and_description(raw_item_code)
+            if not clean_item_code:
+                continue
+            norm_code = cls.normalize_part_number(clean_item_code)
             savepoint_name = f"sp_cost_{idx}"
             try:
                 cur.execute(f"SAVEPOINT {savepoint_name};")
@@ -393,12 +419,18 @@ class ImportService:
                 
                 product_id = norm_prod_cache.get(norm_code)
                 if product_id is None:
+                    part_name = extracted_description or clean_item_code
                     cur.execute(
                         "INSERT INTO PRODUCTS (part_number, part_name, series, make, packing_quantity, packing_quantity_text) VALUES (?, ?, ?, ?, ?, ?)",
-                        (clean_item_code, clean_item_code, series_val, Config.DEFAULT_MAKE, 1, packing_qty)
+                        (clean_item_code, part_name, series_val, Config.DEFAULT_MAKE, 1, packing_qty)
                     )
                     product_id = cur.lastrowid
                     norm_prod_cache[norm_code] = product_id
+                elif extracted_description:
+                    cur.execute(
+                        "UPDATE PRODUCTS SET packing_quantity_text = ?, series = ?, part_name = ? WHERE id = ?",
+                        (packing_qty, series_val, extracted_description, product_id)
+                    )
                 else:
                     cur.execute(
                         "UPDATE PRODUCTS SET packing_quantity_text = ?, series = ? WHERE id = ?",
