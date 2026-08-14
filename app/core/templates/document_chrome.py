@@ -247,12 +247,11 @@ def render_document_header(doc_label, doc_number_label, doc_number, doc_date_lab
         <tr>
             <td width="58%" style="vertical-align: top;">
                 {company_identity_html}
-                <div class="company-subtitle">{Config.COMPANY_SUBTITLE}</div>
                 <div class="company-meta">
                     {Config.COMPANY_ADDRESS}<br>
-                    GSTIN/UIN: {Config.COMPANY_GSTIN} &nbsp;|&nbsp; PAN: {Config.COMPANY_PAN}<br>
-                    State: {Config.COMPANY_STATE_NAME}, Code: {Config.COMPANY_STATE_CODE}<br>
-                    {Config.COMPANY_PHONE} &nbsp;|&nbsp; {Config.COMPANY_EMAIL} &nbsp;|&nbsp; {Config.COMPANY_WEBSITE}
+                    GSTIN/UIN: {Config.COMPANY_GSTIN}<br>
+                    State Name : {Config.COMPANY_STATE_NAME}, Code : {Config.COMPANY_STATE_CODE}<br>
+                    E-Mail : {Config.COMPANY_EMAIL}
                 </div>
             </td>
             <td width="42%" style="vertical-align: top;">

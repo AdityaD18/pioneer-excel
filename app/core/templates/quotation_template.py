@@ -50,7 +50,7 @@ def generate_quotation_html(quotation_data):
     terms_and_signature = render_terms_and_signature(Config.QUOTATION_TERMS_AND_CONDITIONS)
 
     footer = render_footer(
-        f"Thank you for considering {Config.COMPANY_NAME}. &nbsp;|&nbsp; {Config.COMPANY_PHONE} &nbsp;|&nbsp; {Config.COMPANY_EMAIL}<br>"
+        f"Thank you for considering {Config.COMPANY_NAME}. &nbsp;|&nbsp; {Config.COMPANY_EMAIL}<br>"
         "This is a computer generated quotation. Prices are subject to final confirmation."
     )
 

@@ -51,7 +51,7 @@ def generate_invoice_html(invoice_data):
 
     footer = render_footer(
         f"{Config.COMPANY_NAME} &nbsp;|&nbsp; {Config.COMPANY_ADDRESS} &nbsp;|&nbsp; "
-        f"{Config.COMPANY_PHONE} &nbsp;|&nbsp; {Config.COMPANY_EMAIL}<br>"
+        f"{Config.COMPANY_EMAIL}<br>"
         "This is a computer generated invoice."
     )
 
