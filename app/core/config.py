@@ -43,6 +43,8 @@ class Config:
     COMPANY_ADDRESS = _get_env('COMPANY_ADDRESS', '123 Industrial Estate Road, Andheri East, Mumbai, Maharashtra 400069, India')
     COMPANY_GSTIN = _get_env('COMPANY_GSTIN', '27AAAAA0000A1Z5')
     COMPANY_PAN = _get_env('COMPANY_PAN', 'AAAAA0000A')
+    COMPANY_STATE_NAME = _get_env('COMPANY_STATE_NAME', 'Maharashtra')
+    COMPANY_STATE_CODE = _get_env('COMPANY_STATE_CODE', '27')
     COMPANY_PHONE = _get_env('COMPANY_PHONE', '+91 22 0000 0000')
     COMPANY_EMAIL = _get_env('COMPANY_EMAIL', 'accounts@pioneertechnology.example')
     COMPANY_WEBSITE = _get_env('COMPANY_WEBSITE', 'www.pioneertechnology.example')
@@ -71,7 +73,7 @@ class Config:
         "Payment due within the stated payment terms from the invoice date.|"
         "Interest @ 18% per annum will be charged on overdue payments.|"
         "Goods once sold will not be taken back or exchanged.|"
-        "Subject to Mumbai jurisdiction only.|"
+        "Subject to Pune jurisdiction only.|"
         "This is a computer generated invoice and does not require a physical signature."
     )
     QUOTATION_TERMS_AND_CONDITIONS = _get_env(
