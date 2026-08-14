@@ -204,9 +204,13 @@ def render_document_header(doc_label, doc_number_label, doc_number, doc_date_lab
     numbers (right). extra_meta_rows: list of (label, value) tuples for
     additional lines under the doc number/date (e.g. quotation validity).
 
-    If a logo file exists at Config.COMPANY_LOGO_PATH it's shown above the
-    company name; otherwise this is silently omitted (no broken-image icon
-    or empty placeholder box) until a real logo file is added there."""
+    If a logo file exists at Config.COMPANY_LOGO_PATH it's shown at a
+    prominent size in place of the plain-text company name (this
+    customer's logo already includes the company name as part of the
+    artwork, so showing both would just duplicate the name) - the
+    subtitle and address block still render underneath either way.
+    If no logo file exists, this falls back to the plain text heading,
+    with no broken-image icon or empty placeholder box."""
     meta_rows_html = ""
     if extra_meta_rows:
         for label, value in extra_meta_rows:
@@ -217,17 +221,32 @@ def render_document_header(doc_label, doc_number_label, doc_number, doc_date_lab
                 </tr>
             """
 
-    logo_html = ""
     logo_full_path = os.path.join(Config.BASE_DIR, Config.COMPANY_LOGO_PATH)
     if os.path.isfile(logo_full_path):
-        logo_html = f'<img src="{logo_full_path}" style="max-height: 46px; max-width: 220px; margin-bottom: 6px;"><br>'
+        # xhtml2pdf does not reliably honor CSS max-width/max-height on
+        # <img> - it needs explicit width/height HTML attributes, or it
+        # renders the image at full native resolution (this was verified
+        # directly: a 635x710px source logo blew out to ~500px wide in the
+        # actual PDF despite max-height:72px in the style attribute).
+        # Compute the correct pixel size from the real image dimensions so
+        # it renders at the intended compact header size.
+        target_height = 60
+        try:
+            from PIL import Image as _PILImage
+            with _PILImage.open(logo_full_path) as _img:
+                _w, _h = _img.size
+            target_width = max(1, round(target_height * _w / _h))
+        except Exception:
+            target_width = target_height
+        company_identity_html = f'<img src="{logo_full_path}" width="{target_width}" height="{target_height}" style="margin-bottom: 4px;">'
+    else:
+        company_identity_html = f'<div class="company-name">{Config.COMPANY_NAME}</div>'
 
     return f"""
     <table class="doc-header-table">
         <tr>
             <td width="58%" style="vertical-align: top;">
-                {logo_html}
-                <div class="company-name">{Config.COMPANY_NAME}</div>
+                {company_identity_html}
                 <div class="company-subtitle">{Config.COMPANY_SUBTITLE}</div>
                 <div class="company-meta">
                     {Config.COMPANY_ADDRESS}<br>
@@ -311,8 +330,9 @@ def render_bank_and_summary(subtotal, gst_rate, gst_amount, grand_total):
                 <table>
                     <tr><td class="bank-label">Account Name</td><td class="bank-value">{Config.BANK_ACCOUNT_NAME}</td></tr>
                     <tr><td class="bank-label">Bank</td><td class="bank-value">{Config.BANK_NAME}</td></tr>
+                    <tr><td class="bank-label">Account Type</td><td class="bank-value">{Config.BANK_ACCOUNT_TYPE}</td></tr>
                     <tr><td class="bank-label">Account Number</td><td class="bank-value">{Config.BANK_ACCOUNT_NUMBER}</td></tr>
-                    <tr><td class="bank-label">IFSC Code</td><td class="bank-value">{Config.BANK_IFSC}</td></tr>
+                    <tr><td class="bank-label">IFSC / NEFT / RTGS</td><td class="bank-value">{Config.BANK_IFSC}</td></tr>
                     <tr><td class="bank-label">Branch</td><td class="bank-value">{Config.BANK_BRANCH}</td></tr>
                 </table>
             </td>

@@ -58,6 +58,7 @@ class Config:
     # account details in .env.
     BANK_NAME = _get_env('BANK_NAME', 'HDFC Bank')
     BANK_ACCOUNT_NAME = _get_env('BANK_ACCOUNT_NAME', COMPANY_NAME)
+    BANK_ACCOUNT_TYPE = _get_env('BANK_ACCOUNT_TYPE', 'Current Account')
     BANK_ACCOUNT_NUMBER = _get_env('BANK_ACCOUNT_NUMBER', '000000000000')
     BANK_IFSC = _get_env('BANK_IFSC', 'HDFC0000000')
     BANK_BRANCH = _get_env('BANK_BRANCH', 'Andheri East, Mumbai')
