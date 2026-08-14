@@ -42,7 +42,6 @@ class Config:
     # these in .env with your real registered details.
     COMPANY_ADDRESS = _get_env('COMPANY_ADDRESS', '123 Industrial Estate Road, Andheri East, Mumbai, Maharashtra 400069, India')
     COMPANY_GSTIN = _get_env('COMPANY_GSTIN', '27AAAAA0000A1Z5')
-    COMPANY_PAN = _get_env('COMPANY_PAN', 'AAAAA0000A')
     COMPANY_STATE_NAME = _get_env('COMPANY_STATE_NAME', 'Maharashtra')
     COMPANY_STATE_CODE = _get_env('COMPANY_STATE_CODE', '27')
     COMPANY_PHONE = _get_env('COMPANY_PHONE', '+91 22 0000 0000')
