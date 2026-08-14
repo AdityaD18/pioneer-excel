@@ -57,9 +57,9 @@ def base_styles():
             margin-top: 8px;
             font-size: 8.5pt;
         }
-        .doc-meta-table td { padding: 1px 0; }
-        .doc-meta-label { color: #6B7280; text-align: right; padding-right: 8px; }
-        .doc-meta-value { font-weight: bold; text-align: right; color: #1A1A1A; }
+        .doc-meta-table td { padding: 3px 0; }
+        .doc-meta-label { color: #6B7280; text-align: left; width: 50%; }
+        .doc-meta-value { font-weight: bold; text-align: right; color: #1A1A1A; width: 50%; }
 
         .divider-rule {
             border: none;
