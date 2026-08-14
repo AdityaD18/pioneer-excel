@@ -83,21 +83,6 @@ def base_styles():
         .party-name { font-size: 10.5pt; font-weight: bold; color: #0F1E33; margin-bottom: 2px; }
         .party-detail { font-size: 8.5pt; color: #374151; line-height: 1.5; }
 
-        .transport-box {
-            border: 1px solid #D1D5DB;
-            border-top: none;
-            padding: 6px 10px;
-            font-size: 8.5pt;
-            color: #374151;
-            margin-bottom: 8px;
-        }
-        .transport-label {
-            font-weight: bold;
-            color: #B8863B;
-            font-size: 7.5pt;
-            letter-spacing: 0.6px;
-        }
-
         .items-table { margin-bottom: 0; }
         .items-table thead th {
             background-color: #0F1E33;
@@ -140,9 +125,15 @@ def base_styles():
         .summary-table td { padding: 2px 0; font-size: 9pt; }
         .summary-label { color: #4B5563; text-align: right; padding-right: 14px; }
         .summary-value { text-align: right; font-weight: bold; width: 110px; }
-        .summary-total-row td {
+        .summary-divider-row td {
             border-top: 2px solid #0F1E33;
-            padding-top: 4px;
+            line-height: 1px;
+            font-size: 1px;
+            padding: 0;
+        }
+        .summary-total-row td {
+            padding-top: 8px;
+            padding-bottom: 2px;
             font-size: 11pt;
             font-weight: bold;
             color: #0F1E33;
@@ -274,45 +265,62 @@ def render_document_header(doc_label, doc_number_label, doc_number, doc_date_lab
     """
 
 
-def render_party_and_transport_block(party_label, customer_name, customer_gst, terms_label, terms_value, right_box_title, ref_label, ref_value, created_label, created_value, transport_insurance_terms=None):
-    """Customer / order-reference two-column info block, with an optional
-    full-width Transport & Insurance Terms row directly beneath it.
+def render_party_and_transport_block(party_label, customer_name, customer_gst, payment_value, transport_insurance_terms=None, right_box_title=None, ref_label=None, ref_value=None):
+    """Customer info box (left), with Payment and (if set) Transport &
+    Insurance shown as consecutive lines in the same box - not a
+    separate full-width section. An optional right-hand reference box
+    (right_box_title/ref_label/ref_value) is only rendered when given;
+    when omitted the left box takes the full width instead of leaving a
+    redundant/empty column, since callers only pass this when there's
+    genuinely non-duplicate information to show (e.g. an Order Ref that
+    differs from the Invoice # already shown in the header) - for
+    quotations, where the reference number and date were identical to
+    what's already in the header, callers simply don't pass a right box
+    at all rather than repeating the same numbers a second time.
 
     Each box's detail lines are joined with <br> inside a single <div>
     rather than several separate <div class="party-detail"> blocks -
     xhtml2pdf renders each block-level element as its own Paragraph with
-    extra implicit spacing, which is what caused the noticeably sparse,
+    extra implicit spacing, which is what caused a noticeably sparse,
     gappy look between lines in a box with only 2-3 short lines."""
-    transport_html = ""
+    transport_line = ""
     if transport_insurance_terms:
-        transport_html = f"""
-        <div class="transport-box">
-            <span class="transport-label">TRANSPORT &amp; INSURANCE TERMS:</span>
-            {transport_insurance_terms}
-        </div>
+        transport_line = f"<br>Transport &amp; Insurance: {transport_insurance_terms}"
+
+    left_box_html = f"""
+                <div class="party-label">{party_label}</div>
+                <div class="party-name">{customer_name}</div>
+                <div class="party-detail">
+                    GSTIN: {customer_gst or 'N/A'}<br>
+                    Payment: {payment_value}{transport_line}
+                </div>
+    """
+
+    if right_box_title:
+        return f"""
+    <table class="party-table">
+        <tr>
+            <td width="50%" class="party-box">
+                {left_box_html}
+            </td>
+            <td width="50%" class="party-box" style="border-left: none;">
+                <div class="party-label">{right_box_title}</div>
+                <div class="party-detail">
+                    {ref_label}: <strong>{ref_value}</strong>
+                </div>
+            </td>
+        </tr>
+    </table>
         """
 
     return f"""
     <table class="party-table">
         <tr>
-            <td width="50%" class="party-box">
-                <div class="party-label">{party_label}</div>
-                <div class="party-name">{customer_name}</div>
-                <div class="party-detail">
-                    GSTIN: {customer_gst or 'N/A'}<br>
-                    {terms_label}: {terms_value}
-                </div>
-            </td>
-            <td width="50%" class="party-box" style="border-left: none;">
-                <div class="party-label">{right_box_title}</div>
-                <div class="party-detail">
-                    {ref_label}: <strong>{ref_value}</strong><br>
-                    {created_label}: {created_value}
-                </div>
+            <td width="100%" class="party-box">
+                {left_box_html}
             </td>
         </tr>
     </table>
-    {transport_html}
     """
 
 
@@ -346,6 +354,9 @@ def render_bank_and_summary(subtotal, gst_rate, gst_amount, grand_total):
                     <tr>
                         <td class="summary-label">GST ({gst_rate}%)</td>
                         <td class="summary-value">Rs. {gst_amount:,.2f}</td>
+                    </tr>
+                    <tr class="summary-divider-row">
+                        <td colspan="2">&nbsp;</td>
                     </tr>
                     <tr class="summary-total-row">
                         <td class="summary-label">Grand Total</td>

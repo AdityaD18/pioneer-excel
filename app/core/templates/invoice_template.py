@@ -30,14 +30,11 @@ def generate_invoice_html(invoice_data):
         party_label="BILLED TO",
         customer_name=order['customer_name_snapshot'],
         customer_gst=order['customer_gst_snapshot'],
-        terms_label="Payment Terms",
-        terms_value=order['customer_terms_snapshot'] or Config.DEFAULT_PAYMENT_TERMS,
+        payment_value=order['customer_terms_snapshot'] or Config.DEFAULT_PAYMENT_TERMS,
+        transport_insurance_terms=order.get('customer_transport_insurance_snapshot'),
         right_box_title="ORDER DETAILS",
         ref_label="Order Ref",
         ref_value=order['order_number'],
-        created_label="Order Date",
-        created_value=inv['created_at'][:10],
-        transport_insurance_terms=order.get('customer_transport_insurance_snapshot'),
     )
 
     summary_block = render_bank_and_summary(

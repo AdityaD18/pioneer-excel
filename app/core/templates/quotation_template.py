@@ -30,13 +30,7 @@ def generate_quotation_html(quotation_data):
         party_label="PREPARED FOR",
         customer_name=q['customer_name_snapshot'],
         customer_gst=q['customer_gst_snapshot'],
-        terms_label="Payment Terms",
-        terms_value=q['customer_terms_snapshot'] or Config.DEFAULT_PAYMENT_TERMS,
-        right_box_title="QUOTATION DETAILS",
-        ref_label="Quotation Ref",
-        ref_value=q['quotation_number'],
-        created_label="Prepared On",
-        created_value=q['created_at'][:10],
+        payment_value=q['customer_terms_snapshot'] or Config.DEFAULT_PAYMENT_TERMS,
         transport_insurance_terms=q.get('customer_transport_insurance_snapshot'),
     )
 
