@@ -33,14 +33,16 @@ def render_catalog_tab():
     per_piece_col_name = 'Price per Piece'
     
     # Display Data Editor
-    st.caption("Double-click any price or description cell to update inline. \"Price per Piece\" is auto-calculated from \"Price in \\\" Per 100pcs\" and cannot be edited directly.")
+    st.caption("Double-click any Description, Price, or Packing Quantity cell to edit directly. Type your own description for any part, or leave it as imported from Excel. \"Price per Piece\" is auto-calculated from \"Price in \\\" Per 100pcs\" and cannot be edited directly.")
     edited_df = st.data_editor(
         df_cat,
         column_config={
             "product_id": None,
             "Series": st.column_config.TextColumn(disabled=True),
             "Item Code": st.column_config.TextColumn(disabled=True),
-            "Description": st.column_config.TextColumn(),
+            "Description": st.column_config.TextColumn(
+                help="Type or paste a description for this part. Saved when you click 'Save Catalog Updates' below."
+            ),
             "Packing Quantity PCS": st.column_config.TextColumn(),
             price_col_name: st.column_config.NumberColumn(
                 label='Price in " Per 100pcs (₹)',
@@ -57,7 +59,7 @@ def render_catalog_tab():
         hide_index=True
     )
     
-    if st.button("💾 Save Price Updates", type="primary", key="btn_save_catalog"):
+    if st.button("💾 Save Catalog Updates", type="primary", key="btn_save_catalog"):
         updated_cnt = 0
         for idx, row in edited_df.iterrows():
             orig = df_cat.iloc[idx]
